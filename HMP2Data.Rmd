@@ -1,0 +1,202 @@
+---
+title: "HMP2Data"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Esta librería nos permite acceder a los datos procesados de tres estudios dentro del proyecto del microbioma humano (HMP): MOMS-PI (*MULTI-OMIC MICROBIOME STUDY PREGNANCY INITIATIVE*), IBD (*INFLAMMATORY BOWEL DISEASE*), y T2D (*TYPE 2 DIABETES*). 
+
+
+
+```{r, echo=TRUE, results=FALSE, error=FALSE, warning=FALSE,message=FALSE}
+library(HMP2Data)
+library(phyloseq)
+library(SummarizedExperiment)
+library(MultiAssayExperiment)
+library(dplyr)
+library(ggplot2)
+library(UpSetR)
+```
+
+# MOMS-PI
+
+En este apartado se ilustra cómo se cargan los datos del proyecto MOMS-PI.
+
+### Datos de 16S
+
+La matriz de datos contiene 7665 taxones como Greengene IDs(GIDs) por 9107 muestras. 
+
+
+```{r, echo=TRUE}
+data("momspi16S_mtx")
+dim(momspi16S_mtx)
+momspi16S_mtx[1:5, 1:3]
+```
+
+
+La matriz momspi16S_tax contiene las clasificaciones taxonómicas de todos los 7665 GIDs presentes en en la tabla de muestras.
+
+
+```{r, echo=TRUE}
+data("momspi16S_tax")
+dim(momspi16S_tax)
+colnames(momspi16S_tax)
+momspi16S_tax[1:5, 1:5]
+```
+
+
+La matriz momspi16S_samp contiene las anotaciones de todas las 9107 muestras,
+
+
+```{r, echo=TRUE}
+data("momspi16S_samp")
+dim(momspi16S_samp)
+colnames(momspi16S_samp)
+momspi16S_samp[1:5, 1:3]
+
+```
+
+ 
+HMP2Data tiene la función momspi16S() para juntar las tres matrices en un objeto de phyloseq. Después, resulta más facil llamar cada matriz usando las funciones de phyloseq.
+
+
+```{r, echo=TRUE}
+momspi16S_phyloseq <- momspi16S()
+momspi16S_phyloseq
+otus = otu_table(momspi16S_phyloseq) %>% as.data.frame()
+otus[1:3, 1:3]
+#La función otu_table extrae solo la tabla de otus del objeto phyloseq
+#Se puede convertir a data frame o quedarse como objeto otu_table.
+
+```
+
+
+### Datos de citocinas de MOMS-PI
+
+
+MOMS-PI es uno de los estudios que provee datos de otro tipo como los perfiles de citocinas. Podemos acceder a estos datos de manera similar a los de 16S.
+
+
+```{r, echo=TRUE}
+data("momspiCyto_mtx")
+dim(momspiCyto_mtx)
+momspiCyto_mtx[1:5,1:5]
+```
+
+
+Cargamos la anotación de las muestras
+
+```{r,echo=TRUE}
+data("momspiCyto_samp")
+dim(momspiCyto_samp)
+colnames(momspiCyto_samp)
+```
+
+
+La función de HMP2Data momspiCytokines() crea un objeto de *Summarized Experiment*
+
+
+```{r, echo=TRUE}
+momspiCyto = momspiCytokines()
+momspiCyto
+```
+
+
+### Multi-ensayos
+
+
+Podemos contruir un experimento que contenga la información tanto de los datos de 16S como de los perfiles de citocinas para las muestras que tengan ambos disponibles. Para eso se utiliza la función momspiMultiAssay().
+
+
+```{r, echo=TRUE}
+momspiMA <- momspiMultiAssay()
+momspiMA
+```
+
+
+Con el objeto momspiMA, podemos seleccionar datos tanto de 16S como de citocinas. De igual manera, podemos seleccionar la intersección de las muestras que tienen datos tanto de 16S como de citocinas.
+
+```{r, echo=TRUE}
+momsrRNA = momspiMA[[1L]]
+cyto = momspiMA[[2L]]
+
+#completeMA contiene la interección de muestras.
+completeMA = intersectColumns(momspiMA)
+completeMA
+
+```
+
+
+
+
+# IBD y T2D
+
+De igual manera que MOMS-PI, se pueden cargar rápidamente los datos de IBD y T2D como un objeto de phyloseq que contiene toda la información de interés.
+
+
+```{r, echo=TRUE}
+IBD = IBD16S()
+IBD
+T2D = T2D16S()
+T2D
+```
+
+
+# Tablas de frecuencia
+
+
+HMP2Data tiene la función table_two() para generar una tabla con las frecuencias de las anotaciones de cada muestra en los tres estudios.
+
+
+```{r, echo=TRUE}
+list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto,
+     "IBD 16S" = IBD, "T2D 16S" = T2D) %>% table_two()
+```
+
+
+También podemos observar el número de pacientes que incluye cada estudio
+
+
+```{r, echo=TRUE}
+list("MOMS-PI 16S" = momspi16S_phyloseq, "MOMS-PI Cytokines" = momspiCyto, "IBD 16S" = IBD, "T2D 16S" = T2D) %>% patient_table()
+```
+
+
+Otro dato relevante es el monitoreo de la cantidad de visitas que realizaron los pacientes en cada estudio.
+
+
+```{r, echo=TRUE}
+plot_visits <- data.frame(study = c(rep("MOMS-PI Cytokines", nrow(momspiCyto_samp)),
+                     rep("IBD 16S", nrow(IBD16S_samp)),
+                     rep("T2D 16S", nrow(T2D16S_samp))),
+          visits = c(momspiCyto_samp$visit_number,
+                     IBD16S_samp$visit_number,
+                     T2D16S_samp$visit_number))
+p2 <- ggplot(plot_visits, aes(x = visits, fill = study)) + 
+  geom_histogram(position = "dodge", alpha = 0.7, bins = 30, color = "#00BFC4") + xlim(c(0, 40)) +
+  theme(legend.position = c(0.8, 0.8))  + 
+  xlab("Visit number") + ylab("Count")
+p2
+
+```
+
+```{r, echo=TRUE, eval=FALSE}
+T2D_otu = otu_table(T2D) %>% as.data.frame()
+T2D_samp = sample_data(T2D) %>% as.data.frame()
+```
+
+```{r, echo=TRUE, eval=FALSE}
+moms_samp = sample_data(momspi16S_phyloseq)
+
+```
+
+
+
+
+
+
