@@ -1,8 +1,8 @@
 ---
 title: "HMP2Data"
 output:
-  html_document: default
-  pdf_document: default
+  html_document: 
+    keep_md: true
 ---
 
 ```{r setup, include=FALSE}
