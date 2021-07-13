@@ -1,8 +1,9 @@
 ---
 title: "HMP2Data"
+author: Patricio López Sánchez
 output:
-  html_document: 
-    keep_md: true
+  html_document:
+    keep_md: TRUE
 ---
 
 ```{r setup, include=FALSE}
