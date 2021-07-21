@@ -4,8 +4,8 @@ author: "Patricio López Sánchez"
 date: "7/8/2021"
 output:
   html_document:
-    keep_md: TRUE
-
+    keep_md: yes
+  pdf_document: default
 ---
 
 
@@ -24,6 +24,7 @@ library(phyloseq)
 library(dplyr)
 library(stringr)
 library(DESeq2)
+library(PCAtools)
 ```
 
 
@@ -38,7 +39,6 @@ T2D_samples = sample_data(T2D) %>% as.data.frame()
 Teniendo las matrices de OTUs y las respectivas anotaciones de cada muestra, podemos quedarnos solo con las matrices de abundancia que correspondan a las muestras de heces fecales.
 
 ```{r, echo=TRUE, message=FALSE}
-
 T2D_gut_IDs = subset(rownames(T2D_samples), T2D_samples$sample_body_site == "feces")
 T2D_otu_gut = select(T2D_otu, T2D_gut_IDs)
 
@@ -141,10 +141,14 @@ Utilizando la matriz de OTUs y la tabla de metadatos **coldata**, creamos el obj
 dds=DESeqDataSetFromMatrix(countData = OTUs_clinical_complete_nonzero, 
                            colData = coldata, design = ~ condition) 
 
-#Realizamos una transformacion rapida de los datos.
+#Obtenemos las matrices de abundancia normalizadas por vst y rlog
 rld <- varianceStabilizingTransformation(dds, blind=TRUE) 
 
-#Graficamos
+#rlog_data = rlog(dds, blind = TRUE)
+#rlog_data = assay(rlog_data)
+#write.csv(rlog_data, "rlog_otus.csv")
+
+#Graficamos(vst)
 plotPCA(rld, intgroup="condition")
 
 
@@ -154,7 +158,7 @@ plotPCA(rld, intgroup="condition")
 Podemos observar que no existe ningún tipo de separación entre las condiciones establecidas. Podemos correr el mismo script solo haciendo un cambio para obtener las muestras de cavidad nasal en lugar de las heces.
 
 
-```{r, echo=TRUE}
+```{r, echo=TRUE, eval=FALSE, include=FALSE}
 T2D_gut_IDs = subset(rownames(T2D_samples), T2D_samples$sample_body_site == "nasal cavity")
 T2D_otu_gut = select(T2D_otu, T2D_gut_IDs)
 
@@ -222,6 +226,69 @@ plotPCA(rld, intgroup="condition")
 Tampoco hay separación entre muestras.
 
 
+## Componentes principales adicionales
 
 
+
+Podemos analizar más componentes principales y comparar lo resultados entre diferentes métodos de normalización.
+
+
+```{r, echo=TRUE}
+#Extraemos las matrices de abundancia transformadas
+vst = assay(rld)
+rlog_data = read.csv("rlog_otus.csv")
+
+#arreglamos los rownames de rlog_data
+rlog_data_aux = rlog_data[,-1]
+rownames(rlog_data_aux) = rlog_data[,1]
+rlog_data = rlog_data_aux
+
+rlog_cols = colnames(rlog_data)
+
+#Le damos formato a coldata para que lo lea PCAtools
+coldata_mod = coldata[,-1] %>% as.data.frame()
+rownames(coldata_mod) = coldata[,1]
+colnames(coldata_mod) = "condition"
+
+coldata_rlog = coldata_mod
+rownames(coldata_rlog) = rlog_cols
+
+
+```
+
+
+Calculamos los PCs para cada conjunto de datos.
+
+```{r,echo=TRUE}
+pca_rlog = pca(rlog_data, metadata = coldata_rlog)
+pca_vst = pca(vst, metadata = as.matrix(coldata_mod))
+pca_raw = pca(as.matrix(OTUs_clinical_complete), metadata = as.matrix(coldata_mod))
+```
+
+
+### PCA Tabla de abundancia sin normalizar.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+screeplot(pca_raw, getComponents(pca_raw, 1:5))
+pairsplot(pca_raw, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_raw, 1:5))
+biplot(pca_raw, x="PC5", y = "PC1" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+```
+
+
+### PCA tabla de abundancia con transformación estabilizante de varianza (VST)
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+screeplot(pca_vst, getComponents(pca_vst, 1:5))
+pairsplot(pca_vst, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_vst, 1:5), pointSize = 0.5)
+biplot(pca_vst, x="PC3", y = "PC4" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+```
+
+
+### PCA tabla de abundancia con transformación rlog.
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+screeplot(pca_rlog, getComponents(pca_rlog, 1:5))
+pairsplot(pca_rlog, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_rlog, 1:5), pointSize = 0.5)
+biplot(pca_rlog, x="PC5", y = "PC4" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+```
 

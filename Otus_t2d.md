@@ -4,8 +4,8 @@ author: "Patricio López Sánchez"
 date: "7/8/2021"
 output:
   html_document:
-    keep_md: TRUE
-
+    keep_md: yes
+  pdf_document: default
 ---
 
 
@@ -23,6 +23,7 @@ library(phyloseq)
 library(dplyr)
 library(stringr)
 library(DESeq2)
+library(PCAtools)
 ```
 
 
@@ -207,7 +208,7 @@ dds=DESeqDataSetFromMatrix(countData = OTUs_clinical_complete_nonzero,
 ```
 
 ```r
-#Realizamos una transformacion rapida de los datos.
+#Obtenemos las matrices de abundancia normalizadas por vst y rlog
 rld <- varianceStabilizingTransformation(dds, blind=TRUE) 
 ```
 
@@ -218,7 +219,11 @@ rld <- varianceStabilizingTransformation(dds, blind=TRUE)
 ```
 
 ```r
-#Graficamos
+#rlog_data = rlog(dds, blind = TRUE)
+#rlog_data = assay(rlog_data)
+#write.csv(rlog_data, "rlog_otus.csv")
+
+#Graficamos(vst)
 plotPCA(rld, intgroup="condition")
 ```
 
@@ -229,126 +234,113 @@ Podemos observar que no existe ningún tipo de separación entre las condiciones
 
 
 
-```r
-T2D_gut_IDs = subset(rownames(T2D_samples), T2D_samples$sample_body_site == "nasal cavity")
-T2D_otu_gut = select(T2D_otu, T2D_gut_IDs)
-
-IDs_no_tail = str_sub(T2D_gut_IDs, 1, -7)
-IDs_no_tailhead = str_sub(IDs_no_tail,29,-1)
-
-head(as.data.frame(T2D_gut_IDs))
-```
-
-```
-##                                      T2D_gut_IDs
-## 1 HMP2_J00848_1_ST_T0_B0_0122_ZLGD9M0-1013_AA31J
-## 2   HMP2_J04147_1_NS_T0_B0_0122_ZMGT937-02_AAH7B
-## 3   HMP2_J04148_1_NS_T0_B0_0122_ZMGT937-01_AAH7B
-## 4 HMP2_J04183_1_NS_T0_B0_0120_ZN9YTFN-1014_AAH7B
-## 5 HMP2_J04194_1_NS_T0_B0_0120_ZN9YTFN-1013_AAH7B
-## 6 HMP2_J04195_1_NS_T0_B0_0120_ZN9YTFN-1012_AAH7B
-```
-
-```r
-head(as.data.frame(IDs_no_tail))
-```
-
-```
-##                                IDs_no_tail
-## 1 HMP2_J00848_1_ST_T0_B0_0122_ZLGD9M0-1013
-## 2   HMP2_J04147_1_NS_T0_B0_0122_ZMGT937-02
-## 3   HMP2_J04148_1_NS_T0_B0_0122_ZMGT937-01
-## 4 HMP2_J04183_1_NS_T0_B0_0120_ZN9YTFN-1014
-## 5 HMP2_J04194_1_NS_T0_B0_0120_ZN9YTFN-1013
-## 6 HMP2_J04195_1_NS_T0_B0_0120_ZN9YTFN-1012
-```
-
-```r
-head(as.data.frame(IDs_no_tailhead))
-```
-
-```
-##   IDs_no_tailhead
-## 1    ZLGD9M0-1013
-## 2      ZMGT937-02
-## 3      ZMGT937-01
-## 4    ZN9YTFN-1014
-## 5    ZN9YTFN-1013
-## 6    ZN9YTFN-1012
-```
-
-```r
-OTUs_clinical = T2D_otu_gut
-colnames(OTUs_clinical) <- NULL
-colnames(OTUs_clinical) <- IDs_no_tailhead
-
-salud = filter(df_clinico, df_clinico$CL4 == "Healthy")
-infeccion = filter(df_clinico, 
-                   df_clinico$CL4 == "Infection" | df_clinico$CL4 == "Infection_L")
-
-
-OTUs_clinical_unique = OTUs_clinical[!duplicated(names(OTUs_clinical))]
-OTUs_clinical_IDs = colnames(OTUs_clinical_unique)
-
-
-salud_IDs = salud$VisitID
-salud_IDs_flt = subset(salud_IDs, salud_IDs %in% OTUs_clinical_IDs)
-
-
-infeccion_IDs = infeccion$VisitID
-infeccion_IDs_flt = subset(infeccion_IDs, infeccion_IDs %in% OTUs_clinical_IDs)
-
-#Obtenemos la matriz de OTUs que contiene ambas condiciones anotadas
-
-OTUs_clinical_salud_flt = select(OTUs_clinical_unique, salud_IDs_flt)
-OTUs_clinical_infeccion_flt = select(OTUs_clinical_unique, infeccion_IDs_flt)
-OTUs_clinical_complete = cbind(OTUs_clinical_salud_flt, OTUs_clinical_infeccion_flt)
-OTUs_clinical_complete_nonzero = OTUs_clinical_complete + 1
-
-
-coldata_salud = cbind(salud_IDs_flt, rep("Saludable", length(salud_IDs_flt))) %>% as.data.frame()
-coldata_infeccion = cbind(infeccion_IDs_flt, rep("Infectados", length(infeccion_IDs_flt))) %>% as.data.frame()
-
-colnames(coldata_salud) = c("Visit_ID","condition")
-colnames(coldata_infeccion) = c("Visit_ID","condition")
-
-#unimos los dos dfs.
-
-coldata = rbind(coldata_salud, coldata_infeccion)
-coldata$condition = factor(coldata$condition)
-
-
-#Objeto de DESeq
-dds=DESeqDataSetFromMatrix(countData = OTUs_clinical_complete_nonzero, 
-                           colData = coldata, design = ~ condition) 
-```
-
-```
-## converting counts to integer mode
-```
-
-```r
-#Realizamos una transformacion rapida de los datos.
-rld <- varianceStabilizingTransformation(dds, blind=TRUE) 
-```
-
-```
-## -- note: fitType='parametric', but the dispersion trend was not well captured by the
-##    function: y = a/x + b, and a local regression fit was automatically substituted.
-##    specify fitType='local' or 'mean' to avoid this message next time.
-```
-
-```r
-#Graficamos
-plotPCA(rld, intgroup="condition")
-```
-
-![](Otus_t2d_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
 
 
 Tampoco hay separación entre muestras.
 
 
+## Componentes principales adicionales
 
 
+
+Podemos analizar más componentes principales y comparar lo resultados entre diferentes métodos de normalización.
+
+
+
+```r
+#Extraemos las matrices de abundancia transformadas
+vst = assay(rld)
+rlog_data = read.csv("rlog_otus.csv")
+
+#arreglamos los rownames de rlog_data
+rlog_data_aux = rlog_data[,-1]
+rownames(rlog_data_aux) = rlog_data[,1]
+rlog_data = rlog_data_aux
+
+rlog_cols = colnames(rlog_data)
+
+#Le damos formato a coldata para que lo lea PCAtools
+coldata_mod = coldata[,-1] %>% as.data.frame()
+rownames(coldata_mod) = coldata[,1]
+colnames(coldata_mod) = "condition"
+
+coldata_rlog = coldata_mod
+rownames(coldata_rlog) = rlog_cols
+```
+
+
+Calculamos los PCs para cada conjunto de datos.
+
+
+```r
+pca_rlog = pca(rlog_data, metadata = coldata_rlog)
+pca_vst = pca(vst, metadata = as.matrix(coldata_mod))
+pca_raw = pca(as.matrix(OTUs_clinical_complete), metadata = as.matrix(coldata_mod))
+```
+
+
+### PCA Tabla de abundancia sin normalizar.
+
+
+```r
+screeplot(pca_raw, getComponents(pca_raw, 1:5))
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-14-1.png)<!-- -->
+
+```r
+pairsplot(pca_raw, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_raw, 1:5))
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-14-2.png)<!-- -->
+
+```r
+biplot(pca_raw, x="PC5", y = "PC1" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-14-3.png)<!-- -->
+
+
+### PCA tabla de abundancia con transformación estabilizante de varianza (VST)
+
+
+```r
+screeplot(pca_vst, getComponents(pca_vst, 1:5))
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
+```r
+pairsplot(pca_vst, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_vst, 1:5), pointSize = 0.5)
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-15-2.png)<!-- -->
+
+```r
+biplot(pca_vst, x="PC3", y = "PC4" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-15-3.png)<!-- -->
+
+
+### PCA tabla de abundancia con transformación rlog.
+
+
+```r
+screeplot(pca_rlog, getComponents(pca_rlog, 1:5))
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
+
+```r
+pairsplot(pca_rlog, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_rlog, 1:5), pointSize = 0.5)
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-16-2.png)<!-- -->
+
+```r
+biplot(pca_rlog, x="PC5", y = "PC4" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-16-3.png)<!-- -->
 
