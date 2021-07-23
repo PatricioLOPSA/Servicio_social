@@ -24,6 +24,7 @@ library(dplyr)
 library(stringr)
 library(DESeq2)
 library(PCAtools)
+library(pheatmap)
 ```
 
 
@@ -339,8 +340,17 @@ pairsplot(pca_rlog, axisLabSize = 5 , colby = 'condition', components = getCompo
 ![](Otus_t2d_files/figure-html/unnamed-chunk-16-2.png)<!-- -->
 
 ```r
-biplot(pca_rlog, x="PC5", y = "PC4" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+biplot(pca_rlog, x="PC5", y = "PC3" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = .5)
 ```
 
 ![](Otus_t2d_files/figure-html/unnamed-chunk-16-3.png)<!-- -->
+
+
+```r
+vst_cor = cor(vst)
+pheatmap(vst_cor, fontsize = 7, border_color = NA, annotation_row = coldata_mod, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T)
+```
+
+![](Otus_t2d_files/figure-html/unnamed-chunk-17-1.png)<!-- -->
+
 

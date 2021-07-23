@@ -25,6 +25,7 @@ library(dplyr)
 library(stringr)
 library(DESeq2)
 library(PCAtools)
+library(pheatmap)
 ```
 
 
@@ -289,6 +290,13 @@ biplot(pca_vst, x="PC3", y = "PC4" ,colby = 'condition', showLoadings = F, lab =
 ```{r, echo=TRUE, warning=FALSE, message=FALSE}
 screeplot(pca_rlog, getComponents(pca_rlog, 1:5))
 pairsplot(pca_rlog, axisLabSize = 5 , colby = 'condition', components = getComponents(pca_rlog, 1:5), pointSize = 0.5)
-biplot(pca_rlog, x="PC5", y = "PC4" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1)
+biplot(pca_rlog, x="PC5", y = "PC3" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = .5)
 ```
+
+```{r, echo=TRUE}
+vst_cor = cor(vst)
+pheatmap(vst_cor, fontsize = 7, border_color = NA, annotation_row = coldata_mod, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T)
+
+```
+
 
