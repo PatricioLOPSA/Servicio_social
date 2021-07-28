@@ -1,0 +1,153 @@
+---
+title: "Análisis de Abundancia Diferencial"
+author: "Patricio López Sánchez"
+date: "7/26/2021"
+output:
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=TRUE, warning=FALSE, message=FALSE}
+library(HMP2Data)
+library(phyloseq)
+library(dplyr)
+library(stringr)
+library(DESeq2)
+library(edgeR)
+library(eulerr)
+```
+
+
+```{r,echo=TRUE}
+T2D = T2D16S()
+T2D_otu = otu_table(T2D) %>% as.data.frame()
+T2D_samples = sample_data(T2D) %>% as.data.frame()
+T2D_gut_IDs = subset(rownames(T2D_samples), T2D_samples$sample_body_site == "feces")
+T2D_otu_gut = select(T2D_otu, T2D_gut_IDs)
+
+IDs_no_tail = str_sub(T2D_gut_IDs, 1, -7)
+IDs_no_tailhead = str_sub(IDs_no_tail,29,-1)
+
+head(as.data.frame(T2D_gut_IDs))
+head(as.data.frame(IDs_no_tail))
+head(as.data.frame(IDs_no_tailhead))
+
+OTUs_clinical = T2D_otu_gut
+colnames(OTUs_clinical) <- NULL
+colnames(OTUs_clinical) <- IDs_no_tailhead
+
+df_clinico = read.csv("clinical_data", sep = "\t")
+
+salud = filter(df_clinico, df_clinico$CL4 == "Healthy")
+infeccion = filter(df_clinico, 
+                   df_clinico$CL4 == "Infection" | df_clinico$CL4 == "Infection_L")
+
+
+OTUs_clinical_unique = OTUs_clinical[!duplicated(names(OTUs_clinical))]
+OTUs_clinical_IDs = colnames(OTUs_clinical_unique)
+
+
+salud_IDs = salud$VisitID
+salud_IDs_flt = subset(salud_IDs, salud_IDs %in% OTUs_clinical_IDs)
+
+
+infeccion_IDs = infeccion$VisitID
+infeccion_IDs_flt = subset(infeccion_IDs, infeccion_IDs %in% OTUs_clinical_IDs)
+
+#Obtenemos la matriz de OTUs que contiene ambas condiciones anotadas
+
+OTUs_clinical_salud_flt = select(OTUs_clinical_unique, salud_IDs_flt)
+OTUs_clinical_infeccion_flt = select(OTUs_clinical_unique, infeccion_IDs_flt)
+OTUs_clinical_complete = cbind(OTUs_clinical_salud_flt, OTUs_clinical_infeccion_flt)
+OTUs_clinical_complete_nonzero = OTUs_clinical_complete + 1
+
+
+coldata_salud = cbind(salud_IDs_flt, rep("Saludable", length(salud_IDs_flt))) %>% as.data.frame()
+coldata_infeccion = cbind(infeccion_IDs_flt, rep("Infectados", length(infeccion_IDs_flt))) %>% as.data.frame()
+
+colnames(coldata_salud) = c("Visit_ID","condition")
+colnames(coldata_infeccion) = c("Visit_ID","condition")
+
+#unimos los dos dfs.
+
+coldata = rbind(coldata_salud, coldata_infeccion)
+coldata$condition = factor(coldata$condition)
+
+
+#Objeto de DESeq
+dds=DESeqDataSetFromMatrix(countData = OTUs_clinical_complete_nonzero, 
+                           colData = coldata, design = ~ condition) 
+
+```
+
+
+##Abundancia diferencial con DESeq2.
+
+Buscamos OTUs diferencialmente abundantes con la función DESeq()
+
+
+```{r, echo=TRUE}
+DESeq_OTUs = DESeq(dds)
+resultado001 = results(DESeq_OTUs, alpha=0.01)
+summary(resultado001)
+DESeq2::plotMA(resultado001, ylim=c(-2,2))
+plotCounts(DESeq_OTUs, gene = which.min(resultado001$padj), intgroup = "condition")
+
+```
+
+
+Podemos usar edgeR de la misma manera.
+
+
+```{r, echo=TRUE}
+count_edgeR_obj = DGEList(counts= OTUs_clinical_complete_nonzero, group = coldata$condition)
+
+#Normalización
+count_edgeR_obj=estimateCommonDisp(count_edgeR_obj)
+count_edgeR_obj=estimateTagwiseDisp(count_edgeR_obj)
+
+#Calculando la expresión diferencial
+
+## EdgeR hace una prueba de fisher exacta, y por default ajusta el valor de P con la prueba de Benjamin Hochberg
+
+edgeR_DEgenes=exactTest(count_edgeR_obj)
+summary(decideTestsDGE(edgeR_DEgenes, p.value = 0.01))
+plotMD(edgeR_DEgenes,p.value = 0.01 )
+edgeR_DEgenesTable=edgeR_DEgenes$table
+edgeR_DEgenesTable$p.adj = p.adjust(edgeR_DEgenesTable$PValue, "fdr")
+```
+
+
+Podemos comparar si coicidieron ambos metodos. Primero necesitamos extraer los taxones DA de ambas pruebas.
+
+```{r, echo=TRUE}
+#edgeR
+signedgeR_DEgene= filter(edgeR_DEgenesTable, edgeR_DEgenesTable$p.adj < 0.01)
+edgeRORD <- signedgeR_DEgene[order(signedgeR_DEgene$PValue),]
+
+#DESeq2
+DEGDS <- as.data.frame(resultado001) 
+DEGDS <- filter(DEGDS, !is.na(DEGDS$padj))
+DEGDS <- filter(DEGDS, DEGDS$padj<0.01)
+DEGDS <- DEGDS[order(DEGDS$padj),] #DEGs de DESeq
+
+```
+
+
+
+```{r, echo=TRUE}
+DS <- rownames(DEGDS)
+ER <- rownames(edgeRORD)
+Euler_list <- list(DeSeq2 = DS,
+                   edgeR = ER)
+Euler <- euler(Euler_list)
+
+
+plot(Euler, quantities = TRUE,legend = "", main = "Taxas diferencialmente abundantes", fills=c("lightpink","lightblue"))
+```
+
