@@ -20,6 +20,8 @@ library(stringr)
 library(DESeq2)
 library(edgeR)
 library(eulerr)
+library(pheatmap)
+library(ggplot2)
 ```
 
 
@@ -83,6 +85,7 @@ coldata$condition = factor(coldata$condition)
 dds=DESeqDataSetFromMatrix(countData = OTUs_clinical_complete_nonzero, 
                            colData = coldata, design = ~ condition) 
 
+vst = assay(varianceStabilizingTransformation(dds), blind= TRUE)
 ```
 
 
@@ -150,4 +153,49 @@ Euler <- euler(Euler_list)
 
 plot(Euler, quantities = TRUE,legend = "", main = "Taxas diferencialmente abundantes", fills=c("lightpink","lightblue"))
 ```
+
+```{r, echo=TRUE}
+DSER = intersect(DS, ER)
+DS_and_ER = union(setdiff(DS,ER), setdiff(ER,DS))
+
+vst_DA = filter(as.data.frame(vst), rownames(vst) %in% ER)
+
+coldata_mod = coldata[,-1] %>% as.data.frame()
+rownames(coldata_mod) = coldata[,1]
+colnames(coldata_mod) = "condition"
+
+#Resultados de ER muestran mejor agrupamiento de las muestras de interés.
+
+#Heatmap con clustering de columnas
+pheatmap(vst_DA, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+
+#Heatmap sin clustering de columnas
+pheatmap(vst_DA, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = F)
+```
+
+
+Podemos visualizar los resultados con un gráfico de vólcan.
+
+
+```{r, echo=TRUE}
+
+#Primero categorizamos si los OTUS se encuentran UP o DOWN
+edgeR_DEgenesTable$DA = "NS"
+edgeR_DEgenesTable$DA[edgeR_DEgenesTable$logFC >1 & edgeR_DEgenesTable$p.adj <0.01] = "UP"
+edgeR_DEgenesTable$DA[edgeR_DEgenesTable$logFC < -1 & edgeR_DEgenesTable$p.adj <0.01] = "DOWN"
+edgeR_DEgenesTable$DA = as.factor(edgeR_DEgenesTable$DA)
+
+p <- ggplot(data=edgeR_DEgenesTable, aes(x=logFC, y=-log10(p.adj), col=DA)) + geom_point(size= 1) + theme_minimal()
+
+p2 = p + geom_vline(xintercept=c(-1, 1), col="red") +
+        geom_hline(yintercept=-log10(0.01), col="red")
+
+mycolors <- c("lightgreen", "coral", "darkgray")
+names(mycolors) <- c("DOWN", "UP", "NS")
+p3 <- p2 + scale_colour_manual(values = mycolors)
+p3 = p2 + scale_color_manual(values=mycolors) + ylim(0,75)
+ p3
+
+```
+
 

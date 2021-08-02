@@ -19,6 +19,8 @@ library(stringr)
 library(DESeq2)
 library(edgeR)
 library(eulerr)
+library(pheatmap)
+library(ggplot2)
 ```
 
 
@@ -153,6 +155,16 @@ dds=DESeqDataSetFromMatrix(countData = OTUs_clinical_complete_nonzero,
 
 ```
 ## converting counts to integer mode
+```
+
+```r
+vst = assay(varianceStabilizingTransformation(dds), blind= TRUE)
+```
+
+```
+## -- note: fitType='parametric', but the dispersion trend was not well captured by the
+##    function: y = a/x + b, and a local regression fit was automatically substituted.
+##    specify fitType='local' or 'mean' to avoid this message next time.
 ```
 
 
@@ -309,4 +321,61 @@ plot(Euler, quantities = TRUE,legend = "", main = "Taxas diferencialmente abunda
 ```
 
 ![](Abundancia_diferencial_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
+
+
+```r
+DSER = intersect(DS, ER)
+DS_and_ER = union(setdiff(DS,ER), setdiff(ER,DS))
+
+vst_DA = filter(as.data.frame(vst), rownames(vst) %in% ER)
+
+coldata_mod = coldata[,-1] %>% as.data.frame()
+rownames(coldata_mod) = coldata[,1]
+colnames(coldata_mod) = "condition"
+
+#Resultados de ER muestran mejor agrupamiento de las muestras de interés.
+
+#Heatmap con clustering de columnas
+pheatmap(vst_DA, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+```
+
+![](Abundancia_diferencial_files/figure-html/unnamed-chunk-7-1.png)<!-- -->
+
+```r
+#Heatmap sin clustering de columnas
+pheatmap(vst_DA, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = F)
+```
+
+![](Abundancia_diferencial_files/figure-html/unnamed-chunk-7-2.png)<!-- -->
+
+
+Podemos visualizar los resultados con un gráfico de vólcan.
+
+
+
+```r
+#Primero categorizamos si los OTUS se encuentran UP o DOWN
+edgeR_DEgenesTable$DA = "NS"
+edgeR_DEgenesTable$DA[edgeR_DEgenesTable$logFC >1 & edgeR_DEgenesTable$p.adj <0.01] = "UP"
+edgeR_DEgenesTable$DA[edgeR_DEgenesTable$logFC < -1 & edgeR_DEgenesTable$p.adj <0.01] = "DOWN"
+edgeR_DEgenesTable$DA = as.factor(edgeR_DEgenesTable$DA)
+
+p <- ggplot(data=edgeR_DEgenesTable, aes(x=logFC, y=-log10(p.adj), col=DA)) + geom_point(size= 1) + theme_minimal()
+
+p2 = p + geom_vline(xintercept=c(-1, 1), col="red") +
+        geom_hline(yintercept=-log10(0.01), col="red")
+
+mycolors <- c("lightgreen", "coral", "darkgray")
+names(mycolors) <- c("DOWN", "UP", "NS")
+p3 <- p2 + scale_colour_manual(values = mycolors)
+p3 = p2 + scale_color_manual(values=mycolors) + ylim(0,75)
+ p3
+```
+
+```
+## Warning: Removed 4 rows containing missing values (geom_point).
+```
+
+![](Abundancia_diferencial_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+
 
