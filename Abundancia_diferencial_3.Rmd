@@ -1,0 +1,311 @@
+---
+title: "Analizando distintos rangos taxonómicos"
+author: "Patricio López Sánchez"
+date: "8/6/2021"
+output:
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+library(HMP2Data)
+library(phyloseq)
+library(dplyr)
+library(stringr)
+library(DESeq2)
+library(edgeR)
+library(eulerr)
+library(pheatmap)
+library(ggplot2)
+library(ggrepel)
+library(PCAtools)
+library(infotheo)
+```
+
+
+Repetimos los mismos pasos de _wrangling_.
+
+```{r, echo=TRUE}
+T2D = T2D16S()
+T2D_otu = otu_table(T2D) %>% as.data.frame()
+T2D_samples = sample_data(T2D) %>% as.data.frame()
+T2D_tax = tax_table(T2D)
+T2D_gut_IDs = subset(rownames(T2D_samples), T2D_samples$sample_body_site == "feces")
+T2D_otu_gut = select(T2D_otu, T2D_gut_IDs)
+
+IDs_no_tail = str_sub(T2D_gut_IDs, 1, -7)
+IDs_no_tailhead = str_sub(IDs_no_tail,29,-1)
+
+head(as.data.frame(T2D_gut_IDs))
+head(as.data.frame(IDs_no_tail))
+head(as.data.frame(IDs_no_tailhead))
+
+OTUs_clinical = T2D_otu_gut
+colnames(OTUs_clinical) <- NULL
+colnames(OTUs_clinical) <- IDs_no_tailhead
+
+df_clinico = read.csv("clinical_data", sep = "\t")
+
+salud = filter(df_clinico, df_clinico$CL4 == "Healthy")
+infeccion = filter(df_clinico, 
+                   df_clinico$CL4 == "Infection" | df_clinico$CL4 == "Infection_L")
+
+
+OTUs_clinical_unique = OTUs_clinical[!duplicated(names(OTUs_clinical))]
+OTUs_clinical_IDs = colnames(OTUs_clinical_unique)
+
+
+salud_IDs = salud$VisitID
+salud_IDs_flt = subset(salud_IDs, salud_IDs %in% OTUs_clinical_IDs)
+
+
+infeccion_IDs = infeccion$VisitID
+infeccion_IDs_flt = subset(infeccion_IDs, infeccion_IDs %in% OTUs_clinical_IDs)
+
+#Obtenemos la matriz de OTUs que contiene ambas condiciones anotadas
+
+OTUs_clinical_salud_flt = select(OTUs_clinical_unique, salud_IDs_flt)
+OTUs_clinical_infeccion_flt = select(OTUs_clinical_unique, infeccion_IDs_flt)
+OTUs_clinical_complete = cbind(OTUs_clinical_salud_flt, OTUs_clinical_infeccion_flt)
+OTUs_clinical_complete_nonzero = OTUs_clinical_complete + 1
+
+
+coldata_salud = cbind(salud_IDs_flt, rep("Saludable", length(salud_IDs_flt))) %>% as.data.frame()
+coldata_infeccion = cbind(infeccion_IDs_flt, rep("Infectados", length(infeccion_IDs_flt))) %>% as.data.frame()
+
+colnames(coldata_salud) = c("Visit_ID","condition")
+colnames(coldata_infeccion) = c("Visit_ID","condition")
+
+#unimos los dos dfs.
+
+coldata = rbind(coldata_salud, coldata_infeccion)
+coldata$condition = factor(coldata$condition)
+```
+
+
+## Creando el objeto de Phyloseq
+
+El siguiente objetivo es crear un objeto de phyloseq que contenga la información de la tabla de taxonomías que le corresponden a cada OTU, al igual que la nueva tabla de metadatos que le corresponen a cada muestra. Para crear el objeto de phyloseq, necesitamos lo siguiente.
+
+- Tabla de OTUs como matriz.
+- Tabla de metadatos de las muestras como data frame
+- Tabla de taxonomia de los OTUs como matriz
+
+
+```{r, echo=TRUE}
+#OTUs como matriz
+OTUs_clinical_complete = as.matrix(OTUs_clinical_complete)
+
+#sample data como DF
+coldata_mod = coldata[,-1] %>% as.data.frame()
+rownames(coldata_mod) = coldata[,1]
+colnames(coldata_mod) = "condition"
+
+#Tabla de taxonomia como matriz ya la tenemos en el objeto original T2D
+
+#Creamos objeto phyloseq desginando las matrices como componenten del objeto phyloseq
+OTU = otu_table(OTUs_clinical_complete, taxa_are_rows = TRUE)
+samp = sample_data(coldata_mod)
+
+
+
+T2D_phseq = phyloseq(OTU, T2D_tax, samp)
+T2D_phseq
+```
+
+
+```{r, echo=TRUE}
+#intentamos combinar OTUs de un mismo nivel taxonómico
+
+T2D_genus = tax_glom(T2D_phseq, taxrank = "Genus")
+T2D_family = tax_glom(T2D_phseq, taxrank = "Family")
+```
+
+```{r, echo=TRUE}
+otus_genus <- otu_table(T2D_family) %>% as.data.frame()
+otus_genus <- otus_genus +1
+genus_dds <- DESeqDataSetFromMatrix(otus_genus, colData = coldata_mod, design = ~ condition)
+genus_vst <- varianceStabilizingTransformation(genus_dds, blind = TRUE)
+
+genus_vst_matriz <- assay(genus_vst)
+
+pheatmap(genus_vst_matriz, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+
+```
+
+
+
+## Expresión diferencial con edgeR
+
+Definimos la funcion que convierte los objetos de Phyloseq a DGE de edgeR
+
+```{r, echo=TRUE}
+phyloseq_to_edgeR = function(physeq, group, method="TMM", ...){
+  require("edgeR")
+  require("phyloseq")
+  # Enforce orientation.
+  if( !taxa_are_rows(physeq) ){ physeq <- t(physeq) }
+  x = as(otu_table(physeq), "matrix")
+  # Add one to protect against overflow, log(0) issues.
+  x = x + 1
+  # Check `group` argument
+  if( identical(all.equal(length(group), 1), TRUE) & nsamples(physeq) > 1 ){
+    # Assume that group was a sample variable name (must be categorical)
+    group = get_variable(physeq, group)
+  }
+  # Define gene annotations (`genes`) as tax_table
+  taxonomy = tax_table(physeq, errorIfNULL=FALSE)
+  if( !is.null(taxonomy) ){
+    taxonomy = data.frame(as(taxonomy, "matrix"))
+  } 
+  # Now turn into a DGEList
+  y = DGEList(counts=x, group=group, genes=taxonomy, remove.zeros = TRUE, ...)
+  # Calculate the normalization factors
+  z = calcNormFactors(y, method=method)
+  # Check for division by zero inside `calcNormFactors`
+  if( !all(is.finite(z$samples$norm.factors)) ){
+    stop("Something wrong with edgeR::calcNormFactors on this data,
+         non-finite $norm.factors, consider changing `method` argument")
+  }
+  # Estimate dispersions
+  return(estimateTagwiseDisp(estimateCommonDisp(z)))
+}
+```
+
+
+```{r, echo=TRUE}
+dge = phyloseq_to_edgeR(T2D_phseq, group="condition")
+# Perform binary test
+et = exactTest(dge)
+summary(decideTestsDGE(et, p.value = 0.01))
+# Extract values from test results
+tt = topTags(et, n=nrow(dge$table), adjust.method="BH", sort.by="PValue")
+res = tt@.Data[[1]]
+alpha = 0.001
+sigtab = res[(res$FDR < alpha), ]
+sigtab = cbind(as(sigtab, "data.frame"), as(tax_table(T2D_phseq)[rownames(sigtab), ], "matrix"))
+dim(sigtab)
+head(sigtab)
+```
+
+```{r, echo=TRUE}
+theme_set(theme_bw())
+scale_fill_discrete <- function(palname = "Set1", ...) {
+    scale_fill_brewer(palette = palname, ...)
+}
+sigtabgen = subset(sigtab, !is.na(Genus))
+# Phylum order
+x = tapply(sigtabgen$logFC, sigtabgen$Phylum, function(x) max(x))
+x = sort(x, TRUE)
+sigtabgen$Phylum = factor(as.character(sigtabgen$Phylum), levels = names(x))
+# Genus order
+x = tapply(sigtabgen$logFC, sigtabgen$Genus, function(x) max(x))
+x = sort(x, TRUE)
+sigtabgen$Genus = factor(as.character(sigtabgen$Genus), levels = names(x))
+ggplot(sigtabgen, aes(x = Genus, y = logFC, color = Phylum)) + geom_point(size=2) + 
+  theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust = 0.5))
+```
+
+
+```{r, echo=TRUE}
+
+DAotus <- et$table
+DAotus$p.adj <- p.adjust(DAotus$PValue,method = "fdr") 
+
+DAotus_flt <- filter(DAotus, DAotus$p.adj < 0.01)
+
+DAotus_table <- filter(OTUs_clinical_complete_nonzero,
+                       rownames(OTUs_clinical_complete_nonzero) %in% rownames(DAotus_flt))
+
+DAtax <- filter(as.data.frame(T2D_tax), rownames(T2D_tax) %in% rownames(DAotus_table))
+
+```
+
+
+Ahora convertimos a un objeto de phyloseq que solo contenga los OTUs y la tabla de taxonomías de los OTUs DA. Haremos el merge a nivel de genus y familia y orden.
+
+
+```{r,echo=TRUE}
+OTUS <- otu_table(as.matrix(DAotus_table), taxa_are_rows = TRUE)
+TAX <- tax_table(as.matrix(DAtax))
+SAMP <- sample_data(coldata_mod)
+
+DA<- phyloseq(OTUS, TAX, SAMP )
+
+DA_genus <- tax_glom(DA, taxrank = "Genus")
+DA_family <- tax_glom(DA, taxrank = "Family")
+DA_order <- tax_glom(DA, taxrank = "Order")
+
+DA_genus
+DA_family
+DA_order
+```
+
+
+```{r, echo=TRUE}
+species_dds <- DESeqDataSetFromMatrix(as.data.frame(otu_table(DA)), colData = coldata_mod, design = ~ condition)
+genus_dds <- DESeqDataSetFromMatrix(as.data.frame(otu_table(DA_genus)), colData = coldata_mod, design = ~ condition)
+family_dds <- DESeqDataSetFromMatrix(as.data.frame(otu_table(DA_family)), colData = coldata_mod, design = ~ condition)
+order_dds <-  DESeqDataSetFromMatrix(as.data.frame(otu_table(DA_order)), colData = coldata_mod, design = ~ condition)
+
+species_vst <- varianceStabilizingTransformation(species_dds, blind = TRUE) %>% assay()
+genus_vst <- varianceStabilizingTransformation(genus_dds, blind = TRUE) %>% assay()
+family_vst <- varianceStabilizingTransformation(family_dds, blind = TRUE) %>% assay()
+order_vst <- varianceStabilizingTransformation(order_dds, blind = TRUE) %>% assay()
+```
+
+
+## Heatmaps de OTUs DA a diferentes niveles taxonómicos
+
+```{r, echo=TRUE}
+
+pheatmap(genus_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+
+pheatmap(family_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+
+pheatmap(order_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+
+
+cor_genus = cor(genus_vst, method = "pearson")
+
+pheatmap(cor_genus, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+
+```
+
+
+Probamos con PCA
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+pca_vst = pca(genus_vst, metadata = as.matrix(coldata_mod))
+screeplot(pca_vst, getComponents(pca_vst, 1:5))
+
+
+pairsplot(pca_vst, axisLabSize = 3 , colby = 'condition', components = getComponents(pca_vst, 1:5))
+
+
+biplot(pca_vst, x="PC1", y = "PC2" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1.5)
+biplot(pca_vst, x="PC4", y = "PC2" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1.5)
+```
+
+
+## Correlación e información mutua
+
+
+```{r, echo=TRUE}
+sp = t(species_vst)
+cor_sp = cor(sp, method = "spearman")
+cor_sp[1:3,1:3]
+
+mi_sp = mutinformation(as.data.frame(t(otu_table(DA))))
+
+
+```
+
+
+
+
+
