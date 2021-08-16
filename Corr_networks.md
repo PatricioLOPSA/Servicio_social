@@ -214,38 +214,10 @@ inf_nonzero = (otu_table(inf_phseq_flt) +1) %>% as.data.frame()
 sld_nonzero = (otu_table(sld_phseq_flt) +1) %>%  as.data.frame()
 
 inf_dds = DESeqDataSetFromMatrix(inf_nonzero, colData = coldata_infeccion, design = ~ 1)
-```
-
-```
-## converting counts to integer mode
-```
-
-```r
 sld_dds = DESeqDataSetFromMatrix(sld_nonzero, colData = coldata_salud, design = ~1)
-```
 
-```
-## converting counts to integer mode
-```
-
-```r
 inf_vst = varianceStabilizingTransformation(inf_dds, blind = T) %>% assay()
-```
-
-```
-## -- note: fitType='parametric', but the dispersion trend was not well captured by the
-##    function: y = a/x + b, and a local regression fit was automatically substituted.
-##    specify fitType='local' or 'mean' to avoid this message next time.
-```
-
-```r
 sld_vst = varianceStabilizingTransformation(sld_dds, blind = T) %>% assay()
-```
-
-```
-## -- note: fitType='parametric', but the dispersion trend was not well captured by the
-##    function: y = a/x + b, and a local regression fit was automatically substituted.
-##    specify fitType='local' or 'mean' to avoid this message next time.
 ```
 
 
@@ -258,10 +230,10 @@ t_saludable = t(sld_vst)
 
 
 p_infectados <- rcorr(t_infectados, type = "pearson")
-p_salud <- rcorr(t_infectados, type = "pearson")
+p_salud <- rcorr(t_saludable, type = "pearson")
 
 s_infectados <- rcorr(t_infectados, type = "spearman")
-s_salud <- rcorr(t_infectados, type = "spearman")
+s_salud <- rcorr(t_saludable, type = "spearman")
 ```
 
 Aplanamos la matriz de correlación con sus valores P.
@@ -311,9 +283,9 @@ sp_infect$p.adj = p.adjust(sp_infect$p, method = "BH")
 sp_salud$p.adj = p.adjust(sp_salud$p, method = "BH")
 
 #write.csv(prs_infect, "prs_infect.csv")
-#write.csv(prs_salud, "prs_salud.csv")
+write.csv(prs_salud, "prs_salud.csv")
 #write.csv(sp_infect, "sp_infect.csv")
-#write.csv(sp_salud, "sp_salud.csv")
+write.csv(sp_salud, "sp_salud.csv")
 ```
 
 
