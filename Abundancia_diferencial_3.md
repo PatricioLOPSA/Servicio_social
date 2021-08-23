@@ -192,6 +192,31 @@ T2D_phseq
 ## tax_table()   Taxonomy Table:    [ 12062 taxa by 7 taxonomic ranks ]
 ```
 
+Filtramos OTUs con una gran prevalencia de 0 a lo largo de todas las muestras.
+
+
+
+```r
+# Filtramos OTUs sin conteos
+T2D_phseq = filter_taxa(T2D_phseq, function(x) sum(x) > (0), TRUE)
+
+T2D_phseq = filter_taxa(T2D_phseq, function(x) sum( x != 0 ) > (0.1*length(x)), TRUE)
+
+T2D_phseq
+```
+
+```
+## phyloseq-class experiment-level object
+## otu_table()   OTU Table:         [ 1477 taxa and 445 samples ]
+## sample_data() Sample Data:       [ 445 samples by 1 sample variables ]
+## tax_table()   Taxonomy Table:    [ 1477 taxa by 7 taxonomic ranks ]
+```
+
+
+
+
+
+
 
 
 ```r
@@ -203,7 +228,7 @@ T2D_family = tax_glom(T2D_phseq, taxrank = "Family")
 
 
 ```r
-otus_genus <- otu_table(T2D_family) %>% as.data.frame()
+otus_genus <- otu_table(T2D_phseq) %>% as.data.frame()
 otus_genus <- otus_genus +1
 genus_dds <- DESeqDataSetFromMatrix(otus_genus, colData = coldata_mod, design = ~ condition)
 ```
@@ -225,10 +250,10 @@ genus_vst <- varianceStabilizingTransformation(genus_dds, blind = TRUE)
 ```r
 genus_vst_matriz <- assay(genus_vst)
 
-pheatmap(genus_vst_matriz, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+pheatmap(genus_vst_matriz, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = F)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-5-1.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-6-1.png)<!-- -->
 
 
 
@@ -281,9 +306,9 @@ summary(decideTestsDGE(et, p.value = 0.01))
 
 ```
 ##        Saludable-Infectados
-## Down                    164
-## NotSig                11597
-## Up                      301
+## Down                    108
+## NotSig                 1178
+## Up                      191
 ```
 
 ```r
@@ -297,7 +322,7 @@ dim(sigtab)
 ```
 
 ```
-## [1] 352  18
+## [1] 205  18
 ```
 
 ```r
@@ -305,34 +330,34 @@ head(sigtab)
 ```
 
 ```
-##          Kingdom         Phylum           Class              Order
-## 1101177 Bacteria     Firmicutes         Bacilli         Bacillales
-## 967427  Bacteria     Firmicutes         Bacilli    Lactobacillales
-## 103730  Bacteria  Bacteroidetes     Bacteroidia      Bacteroidales
-## 1033167 Bacteria     Firmicutes         Bacilli    Lactobacillales
-## 69933   Bacteria Actinobacteria  Actinobacteria  Bifidobacteriales
-## 1131759 Bacteria     Firmicutes Erysipelotrichi Erysipelotrichales
-##                      Family           Genus Species     logFC    logCPM
-## 1101177   Staphylococcaceae  Staphylococcus  aureus -7.694882 11.141882
-## 967427     Streptococcaceae   Streptococcus    <NA> -6.062318  9.274081
-## 103730       Bacteroidaceae     Bacteroides    <NA> -4.743882  8.249478
-## 1033167       Aerococcaceae    Alloiococcus    <NA> -3.547742  7.436581
-## 69933    Bifidobacteriaceae Bifidobacterium    <NA> -3.059952  7.260186
-## 1131759 Erysipelotrichaceae   [Eubacterium]    <NA> -3.056480  7.490000
-##                PValue           FDR  Kingdom         Phylum           Class
-## 1101177 3.491757e-198 4.211757e-194 Bacteria     Firmicutes         Bacilli
-## 967427  1.181680e-172 7.126710e-169 Bacteria     Firmicutes         Bacilli
-## 103730  7.613311e-129 3.061059e-125 Bacteria  Bacteroidetes     Bacteroidia
-## 1033167  6.545928e-90  1.973925e-86 Bacteria     Firmicutes         Bacilli
-## 69933    3.751193e-70  9.049377e-67 Bacteria Actinobacteria  Actinobacteria
-## 1131759  2.233236e-63  4.489549e-60 Bacteria     Firmicutes Erysipelotrichi
-##                      Order              Family           Genus Species
-## 1101177         Bacillales   Staphylococcaceae  Staphylococcus  aureus
-## 967427     Lactobacillales    Streptococcaceae   Streptococcus    <NA>
-## 103730       Bacteroidales      Bacteroidaceae     Bacteroides    <NA>
-## 1033167    Lactobacillales       Aerococcaceae    Alloiococcus    <NA>
-## 69933    Bifidobacteriales  Bifidobacteriaceae Bifidobacterium    <NA>
-## 1131759 Erysipelotrichales Erysipelotrichaceae   [Eubacterium]    <NA>
+##         Kingdom         Phylum          Class            Order
+## 179585 Bacteria     Firmicutes     Clostridia    Clostridiales
+## 188262 Bacteria     Firmicutes     Clostridia    Clostridiales
+## 293883 Bacteria     Firmicutes     Clostridia    Clostridiales
+## 287691 Bacteria     Firmicutes     Clostridia    Clostridiales
+## 186090 Bacteria     Firmicutes     Clostridia    Clostridiales
+## 329688 Bacteria Actinobacteria Coriobacteriia Coriobacteriales
+##                   Family                 Genus   Species     logFC   logCPM
+## 179585   Ruminococcaceae                  <NA>      <NA> -2.749790 9.924167
+## 188262              <NA>                  <NA>      <NA> -2.135351 8.342829
+## 293883   Veillonellaceae Phascolarctobacterium      <NA>  3.348296 9.086197
+## 287691    Clostridiaceae                  <NA>      <NA> -2.099671 9.565036
+## 186090   Ruminococcaceae          Ruminococcus      <NA>  3.358083 9.625383
+## 329688 Coriobacteriaceae           Collinsella stercoris  3.657399 9.964333
+##              PValue          FDR  Kingdom         Phylum          Class
+## 179585 9.750090e-29 1.440088e-25 Bacteria     Firmicutes     Clostridia
+## 188262 2.042298e-26 1.508237e-23 Bacteria     Firmicutes     Clostridia
+## 293883 3.331432e-24 1.640175e-21 Bacteria     Firmicutes     Clostridia
+## 287691 2.373716e-21 8.751586e-19 Bacteria     Firmicutes     Clostridia
+## 186090 2.962622e-21 8.751586e-19 Bacteria     Firmicutes     Clostridia
+## 329688 4.830961e-21 9.518507e-19 Bacteria Actinobacteria Coriobacteriia
+##                   Order            Family                 Genus   Species
+## 179585    Clostridiales   Ruminococcaceae                  <NA>      <NA>
+## 188262    Clostridiales              <NA>                  <NA>      <NA>
+## 293883    Clostridiales   Veillonellaceae Phascolarctobacterium      <NA>
+## 287691    Clostridiales    Clostridiaceae                  <NA>      <NA>
+## 186090    Clostridiales   Ruminococcaceae          Ruminococcus      <NA>
+## 329688 Coriobacteriales Coriobacteriaceae           Collinsella stercoris
 ```
 
 
@@ -354,7 +379,60 @@ ggplot(sigtabgen, aes(x = Genus, y = logFC, color = Phylum)) + geom_point(size=2
   theme(axis.text.x = element_text(angle = -90, hjust = 0, vjust = 0.5))
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-8-1.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-9-1.png)<!-- -->
+
+
+Volcano plot
+
+
+
+```r
+#Primero categorizamos si los OTUS se encuentran UP o DOWN
+volcano_plot = function(edgeR_DEgenes, logfc, pvalue){
+
+  edgeR_DEgenestax = edgeR_DEgenes$genes
+  edgeR_DEgenesTable=edgeR_DEgenes$table
+edgeR_DEgenesTable$p.adj = p.adjust(edgeR_DEgenesTable$PValue, "fdr")
+edgeR_DEgenesTable$DA = "NS"
+edgeR_DEgenesTable$DA[edgeR_DEgenesTable$logFC >(logfc) & edgeR_DEgenesTable$p.adj <(pvalue)] = "UP"
+edgeR_DEgenesTable$DA[edgeR_DEgenesTable$logFC < -(logfc) & edgeR_DEgenesTable$p.adj <(pvalue)] = "DOWN"
+edgeR_DEgenesTable$DA = as.factor(edgeR_DEgenesTable$DA)
+edgeR_DEgenesTable$delabel <- NA
+edgeR_DEgenesTable$delabel[edgeR_DEgenesTable$DA != "NS"] <- edgeR_DEgenestax$Phylum[edgeR_DEgenesTable$DA != "NS"]
+
+
+p <- ggplot(data=edgeR_DEgenesTable, aes(x=logFC, y=-log10(p.adj), col=DA, label=delabel)) + geom_point(size= 1) + theme_minimal() + geom_text_repel()
+
+p2 = p + geom_vline(xintercept=c(-logfc, logfc), col="red") +
+        geom_hline(yintercept=-log10(pvalue), col="red")
+
+mycolors <- c("lightgreen", "coral", "darkgray")
+names(mycolors) <- c("DOWN", "UP", "NS")
+p3 <- p2 + scale_colour_manual(values = mycolors)
+p3 = p2 + scale_color_manual(values=mycolors) + ylim(0,40)
+return(p3)
+}
+```
+
+
+
+```r
+volcano_plot(et, 1, 0.01)
+```
+
+```
+## Warning: Removed 1329 rows containing missing values (geom_text_repel).
+```
+
+```
+## Warning: ggrepel: 130 unlabeled data points (too many overlaps). Consider
+## increasing max.overlaps
+```
+
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
+
+
+
 
 
 
@@ -391,9 +469,9 @@ DA_genus
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 46 taxa and 445 samples ]
+## otu_table()   OTU Table:         [ 29 taxa and 445 samples ]
 ## sample_data() Sample Data:       [ 445 samples by 1 sample variables ]
-## tax_table()   Taxonomy Table:    [ 46 taxa by 7 taxonomic ranks ]
+## tax_table()   Taxonomy Table:    [ 29 taxa by 7 taxonomic ranks ]
 ```
 
 ```r
@@ -402,9 +480,9 @@ DA_family
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 37 taxa and 445 samples ]
+## otu_table()   OTU Table:         [ 22 taxa and 445 samples ]
 ## sample_data() Sample Data:       [ 445 samples by 1 sample variables ]
-## tax_table()   Taxonomy Table:    [ 37 taxa by 7 taxonomic ranks ]
+## tax_table()   Taxonomy Table:    [ 22 taxa by 7 taxonomic ranks ]
 ```
 
 ```r
@@ -413,9 +491,9 @@ DA_order
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 25 taxa and 445 samples ]
+## otu_table()   OTU Table:         [ 15 taxa and 445 samples ]
 ## sample_data() Sample Data:       [ 445 samples by 1 sample variables ]
-## tax_table()   Taxonomy Table:    [ 25 taxa by 7 taxonomic ranks ]
+## tax_table()   Taxonomy Table:    [ 15 taxa by 7 taxonomic ranks ]
 ```
 
 
@@ -497,22 +575,28 @@ order_vst <- varianceStabilizingTransformation(order_dds, blind = TRUE) %>% assa
 
 
 ```r
+pheatmap(species_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
+```
+
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
+
+```r
 pheatmap(genus_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-12-1.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-15-2.png)<!-- -->
 
 ```r
 pheatmap(family_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-12-2.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-15-3.png)<!-- -->
 
 ```r
 pheatmap(order_vst, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-12-3.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-15-4.png)<!-- -->
 
 ```r
 cor_genus = cor(genus_vst, method = "pearson")
@@ -520,58 +604,37 @@ cor_genus = cor(genus_vst, method = "pearson")
 pheatmap(cor_genus, fontsize = 7, border_color = NA, annotation_col = coldata_mod, show_rownames = F, show_colnames = F, labels_row = NULL, annotation_legend = T, cluster_cols = T)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-12-4.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-15-5.png)<!-- -->
 
 
 Probamos con PCA
 
 
 ```r
-pca_vst = pca(genus_vst, metadata = as.matrix(coldata_mod))
+pca_vst = pca(family_vst, metadata = as.matrix(coldata_mod))
 screeplot(pca_vst, getComponents(pca_vst, 1:5))
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-13-1.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
 
 ```r
 pairsplot(pca_vst, axisLabSize = 3 , colby = 'condition', components = getComponents(pca_vst, 1:5))
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-13-2.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-16-2.png)<!-- -->
 
 ```r
-biplot(pca_vst, x="PC1", y = "PC2" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1.5)
+biplot(pca_vst, x="PC3", y = "PC1" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1.5)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-13-3.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-16-3.png)<!-- -->
 
 ```r
-biplot(pca_vst, x="PC4", y = "PC2" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1.5)
+biplot(pca_vst, x="PC2", y = "PC1" ,colby = 'condition', showLoadings = F, lab = NULL, pointSize = 1.5)
 ```
 
-![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-13-4.png)<!-- -->
+![](Abundancia_diferencial_3_files/figure-html/unnamed-chunk-16-4.png)<!-- -->
 
-
-## Correlación e información mutua
-
-
-
-```r
-sp = t(species_vst)
-cor_sp = cor(sp, method = "spearman")
-cor_sp[1:3,1:3]
-```
-
-```
-##             174924      174846      366237
-## 174924  1.00000000 -0.09763114 -0.05987432
-## 174846 -0.09763114  1.00000000  0.10406191
-## 366237 -0.05987432  0.10406191  1.00000000
-```
-
-```r
-mi_sp = mutinformation(as.data.frame(t(otu_table(DA))))
-```
 
 
 
