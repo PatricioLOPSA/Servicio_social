@@ -181,25 +181,25 @@ inf_phseq = phyloseq(OTUinf, T2D_tax)
 
 
 ```r
-sld_phseq_flt = filter_taxa(sld_phseq, function(x) sum(x) > (0), TRUE)
+sld_phseq_flt = filter_taxa(sld_phseq, function(x) sum( x != 0 ) > (0.1*length(x)), TRUE)
 sld_phseq_flt
 ```
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 5691 taxa and 343 samples ]
-## tax_table()   Taxonomy Table:    [ 5691 taxa by 7 taxonomic ranks ]
+## otu_table()   OTU Table:         [ 1468 taxa and 343 samples ]
+## tax_table()   Taxonomy Table:    [ 1468 taxa by 7 taxonomic ranks ]
 ```
 
 ```r
-inf_phseq_flt = filter_taxa(inf_phseq, function(x) sum(x) > (0), TRUE )
+inf_phseq_flt = filter_taxa(inf_phseq, function(x) sum( x != 0 ) > (0.1*length(x)), TRUE)
 inf_phseq_flt
 ```
 
 ```
 ## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 4296 taxa and 102 samples ]
-## tax_table()   Taxonomy Table:    [ 4296 taxa by 7 taxonomic ranks ]
+## otu_table()   OTU Table:         [ 1408 taxa and 102 samples ]
+## tax_table()   Taxonomy Table:    [ 1408 taxa by 7 taxonomic ranks ]
 ```
 
 
@@ -282,10 +282,10 @@ prs_salud$p.adj = p.adjust(prs_salud$p, method = "BH")
 sp_infect$p.adj = p.adjust(sp_infect$p, method = "BH")
 sp_salud$p.adj = p.adjust(sp_salud$p, method = "BH")
 
-#write.csv(prs_infect, "prs_infect.csv")
-write.csv(prs_salud, "prs_salud.csv")
-#write.csv(sp_infect, "sp_infect.csv")
-write.csv(sp_salud, "sp_salud.csv")
+write.csv(prs_infect, "prs_infect.csv")
+#write.csv(prs_salud, "prs_salud.csv")
+write.csv(sp_infect, "sp_infect.csv")
+#write.csv(sp_salud, "sp_salud.csv")
 ```
 
 
