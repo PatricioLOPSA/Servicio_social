@@ -323,8 +323,8 @@ Repetimos los mismos pasos para la red p < 0.001
 g_inf2 = graph_from_data_frame(net_inf_norm2, directed = F)
 g_sld2 = graph_from_data_frame(net_sld_norm2, directed = F)
 
-v_inf2 = V(g_inf)$name
-v_sld2 = V(g_sld)$name
+v_inf2 = V(g_inf2)$name
+v_sld2 = V(g_sld2)$name
 
 
 v_missinf2 = subset(v_cominf, v_cominf %ni% v_inf2) 
@@ -577,5 +577,250 @@ plot(g_sld_com2, rescale = T, layout = ls2)
 ```
 
 ![](Ranking_norm_viz_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+
+
+
+# Redes separadas con aristas negativas y positivas
+
+Observamos individualmente las subredes con interacciones solo positivas o negativas
+
+
+
+```r
+g_inf_neg <- graph_from_data_frame(inf_neg2, directed = F)
+g_inf_pos <- graph_from_data_frame(inf_pos2, directed = F)
+
+g_sld_neg <- graph_from_data_frame(sld_neg2, directed = F)
+g_sld_pos <- graph_from_data_frame(sld_pos2, directed = F)
+```
+
+
+Calculamos la fuerza y el grado de cada nodo para cada red.
+
+
+
+```r
+#Calculamos grado
+V(g_inf_neg)$degree = degree(g_inf_neg)
+V(g_inf_pos)$degree = degree(g_inf_pos)
+
+V(g_sld_neg)$degree = degree(g_sld_neg)
+V(g_sld_pos)$degree = degree(g_sld_pos)
+
+V(g_inf_com2)$degree = degree(g_inf_com2)
+V(g_sld_com2)$degree = degree(g_sld_com2)
+
+#Calculamos fuerza
+V(g_inf_neg)$str = strength(g_inf_neg, weights = abs(E(g_inf_neg)$norm))
+V(g_inf_pos)$str = strength(g_inf_pos, weights = E(g_inf_pos)$norm)
+
+V(g_sld_neg)$str = strength(g_sld_neg, weights = abs(E(g_sld_neg)$norm))
+V(g_sld_pos)$str = strength(g_sld_pos, weights = E(g_sld_pos)$norm)
+
+V(g_inf_com2)$str = strength(g_inf_com2, weights = abs(E(g_inf_com2)$norm_1))
+V(g_sld_com2)$str = strength(g_sld_com2, weights = abs(E(g_sld_com2)$norm_1))
+
+
+#Calculamos fuerza promedio para cada nodo (s_i = str_i/deg_i)
+
+V(g_inf_neg)$strnorm = V(g_inf_neg)$str/V(g_inf_neg)$degree
+V(g_inf_pos)$strnorm = V(g_inf_pos)$str/V(g_inf_pos)$degree
+
+V(g_sld_neg)$strnorm = V(g_sld_neg)$str/V(g_sld_neg)$degree
+V(g_sld_pos)$strnorm = V(g_sld_pos)$str/V(g_sld_pos)$degree
+
+V(g_inf_com2)$strnorm = V(g_inf_com2)$str/V(g_inf_com2)$degree
+V(g_sld_com2)$strnorm = V(g_sld_com2)$str/V(g_sld_com2)$degree
+```
+
+
+
+Checamos plot de grado vs fuerza promedio
+
+
+
+```r
+deg_vs_str_infneg = cbind.data.frame(V(g_inf_neg)$degree, V(g_inf_neg)$strnorm)
+deg_vs_str_infpos = cbind.data.frame(V(g_inf_pos)$degree, V(g_inf_pos)$strnorm)
+deg_vs_str_infcom = cbind.data.frame(V(g_inf_com2)$degree, V(g_inf_com2)$strnorm)
+
+
+deg_vs_str_sldneg = cbind.data.frame(V(g_sld_neg)$degree, V(g_sld_neg)$strnorm)
+deg_vs_str_sldpos = cbind.data.frame(V(g_sld_pos)$degree, V(g_sld_pos)$strnorm)
+deg_vs_str_sldcom = cbind.data.frame(V(g_sld_com2)$degree, V(g_sld_com2)$strnorm)
+```
+
+
+
+
+```r
+ggplot(deg_vs_str_infneg) +
+ aes(x = `V(g_inf_neg)$degree`, y = `V(g_inf_neg)$strnorm`) +
+ geom_point(shape = "circle", 
+ size = 1.5, colour = "#C9092C") + geom_vline(xintercept = mean( deg_vs_str_infneg$`V(g_inf_neg)$degree`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_infneg$`V(g_inf_neg)$strnorm`), col = "black") +
+ theme_minimal()
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-24-1.png)<!-- -->
+
+```r
+ggplot(deg_vs_str_infpos) +
+ aes(x = `V(g_inf_pos)$degree`, y = `V(g_inf_pos)$strnorm`) +
+ geom_point(shape = "circle", 
+ size = 1.5, colour = "green") + geom_vline(xintercept = mean( deg_vs_str_infpos$`V(g_inf_pos)$degree`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_infpos$`V(g_inf_pos)$strnorm`), col = "black") +
+ theme_minimal()
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-24-2.png)<!-- -->
+
+```r
+ggplot(deg_vs_str_infcom) +
+ aes(x = `V(g_inf_com2)$degree`, y = `V(g_inf_com2)$strnorm`) +
+ geom_point(shape = "circle", 
+ size = 1.5, colour = "steelblue3") + geom_vline(xintercept = mean( deg_vs_str_infcom$`V(g_inf_com2)$degree`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_infcom$`V(g_inf_com2)$strnorm`, na.rm = T), col = "black") +
+ theme_minimal()
+```
+
+```
+## Warning: Removed 24 rows containing missing values (geom_point).
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-24-3.png)<!-- -->
+
+
+
+
+```r
+ggplot(deg_vs_str_sldneg) +
+ aes(x = `V(g_sld_neg)$degree`, y = `V(g_sld_neg)$strnorm`) +
+ geom_point(shape = "circle", 
+ size = 1.5, colour = "#C9092C") + geom_vline(xintercept = mean( deg_vs_str_sldneg$`V(g_sld_neg)$degree`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_sldneg$`V(g_sld_neg)$strnorm`), col = "black") +
+ theme_minimal()
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+
+```r
+ggplot(deg_vs_str_sldpos) +
+ aes(x = `V(g_sld_pos)$degree`, y = `V(g_sld_pos)$strnorm`) +
+ geom_point(shape = "circle", 
+ size = 1.5, colour = "green") + geom_vline(xintercept = mean( deg_vs_str_sldpos$`V(g_sld_pos)$degree`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_sldpos$`V(g_sld_pos)$strnorm`), col = "black") +
+ theme_minimal()
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-25-2.png)<!-- -->
+
+```r
+ggplot(deg_vs_str_sldcom) +
+ aes(x = `V(g_sld_com2)$degree`, y = `V(g_sld_com2)$strnorm`) +
+ geom_point(shape = "circle", 
+ size = 1.5, colour = "plum2") + geom_vline(xintercept = mean( deg_vs_str_sldcom$`V(g_sld_com2)$degree`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_sldcom$`V(g_sld_com2)$strnorm`, na.rm = T), col = "black") +
+ theme_minimal()
+```
+
+```
+## Warning: Removed 25 rows containing missing values (geom_point).
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-25-3.png)<!-- -->
+
+
+Checamos grado de nodo vs. rank.
+
+
+
+```r
+deg_rank_inf = cbind.data.frame(V(g_inf_com2)$name, V(g_inf_com2)$degree)
+deg_rank_inf =  deg_rank_inf[order(-deg_rank_inf$`V(g_inf_com2)$degree`),]
+deg_rank_inf$rank = rank(-deg_rank_inf$`V(g_inf_com2)$degree`, ties.method = "min")
+
+
+
+deg_rank_sld = cbind.data.frame(V(g_sld_com2)$name, V(g_sld_com2)$degree)
+deg_rank_sld =  deg_rank_sld[order(-deg_rank_sld$`V(g_sld_com2)$degree`),]
+deg_rank_sld$rank = rank(-deg_rank_sld$`V(g_sld_com2)$degree`, ties.method = "min")
+
+
+
+ggplot() + 
+geom_line(data=deg_rank_inf, aes(x=log10(`V(g_inf_com2)$degree`), y=log10(rank)), color='midnightblue') + 
+geom_line(data=deg_rank_sld, aes(x=log10(`V(g_sld_com2)$degree`), y=log10(rank)), color='tomato') + theme_minimal()
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-26-1.png)<!-- -->
+
+
+Checamos fuerza norm v.s. rank
+
+
+
+```r
+str_rank_inf = cbind.data.frame(V(g_inf_com2)$name, V(g_inf_com2)$strnorm)
+str_rank_inf =  str_rank_inf[order(-str_rank_inf$`V(g_inf_com2)$strnorm`),]
+str_rank_inf$rank = rank(-str_rank_inf$`V(g_inf_com2)$strnorm`, ties.method = "min")
+
+
+
+str_rank_sld = cbind.data.frame(V(g_sld_com2)$name, V(g_sld_com2)$strnorm)
+str_rank_sld =  str_rank_sld[order(-str_rank_sld$`V(g_sld_com2)$strnorm`),]
+str_rank_sld$rank = rank(-str_rank_sld$`V(g_sld_com2)$strnorm`, ties.method = "min")
+
+
+
+ggplot() + 
+geom_line(data=str_rank_inf, aes(x=log10(`V(g_inf_com2)$strnorm`), y=log10(rank)), color='midnightblue') + 
+geom_line(data=str_rank_sld, aes(x=log10(`V(g_sld_com2)$strnorm`), y=log10(rank)), color='tomato') + theme_minimal()
+```
+
+```
+## Warning: Removed 24 row(s) containing missing values (geom_path).
+```
+
+```
+## Warning: Removed 25 row(s) containing missing values (geom_path).
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-27-1.png)<!-- -->
+
+
+Checamos cómo cambiaron los rankings de los nodos comunes para ambas condiciones 
+
+
+
+```r
+itsct_sld = filter(deg_rank_sld, deg_rank_sld$`V(g_sld_com2)$name` %in% deg_rank_inf$`V(g_inf_com2)$name`) 
+itsct_sld_ord = itsct_sld[order(itsct_sld$`V(g_sld_com2)$name`),]
+
+
+
+itsct_inf = filter(deg_rank_inf, deg_rank_inf$`V(g_inf_com2)$name` %in% deg_rank_sld$`V(g_sld_com2)$name`)
+itsct_inf_ord = itsct_inf[order(itsct_inf$`V(g_inf_com2)$name`),]
+
+
+ranks_compare = itsct_sld_ord
+ranks_compare$rank_inf = itsct_inf_ord$rank
+ranks_compare$grado_inf = itsct_inf_ord$`V(g_inf_com2)$degree`
+
+colnames(ranks_compare) = c("OTU", "grado_sld", "rank_salud", "rank_inf", "grado_inf")
+```
+
+
+
+```r
+ggplot(ranks_compare) +
+ aes(x =-log10(rank_inf), y = -log10(rank_salud)) +
+ geom_point(shape = "circle", size = 1, 
+ colour = "#FF269E") +
+geom_abline(intercept = 0, slope = 1) +
+ theme_minimal()
+```
+
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-29-1.png)<!-- -->
 
 
