@@ -19,6 +19,11 @@ library(ggplot2)
 library(pheatmap)
 library(igraph)
 library(vroom)
+library(ggraph)
+library(graphlayouts)
+library(HMP2Data)
+library(phyloseq)
+library(knitr)
 ```
 
 
@@ -560,7 +565,7 @@ plot(g_inf_com2, rescale = T, layout = l2)
 
 ```r
 com_sld2 = cluster_louvain(g_sld_com2, weights = abs(E(g_sld_com2)$norm_1))
-V(g_sld_com2)$community = com_sld2$membership
+V(g_sld_com2)$community = as.character(com_sld2$membership)
 V(g_sld_com2)$label = NA
 V(g_sld_com2)$size = degree(g_sld_com2, v=V(g_sld_com2)) %>% minmax() *7 %>% +.2
 V(g_sld_com2)$frame.color = "white"
@@ -570,13 +575,16 @@ E(g_sld_com2)$width = abs(E(g_sld_com2)$norm_1) / 2.5
 E(g_sld_com2)$color = ifelse(E(g_sld_com2)$norm_1 >0, "darkseagreen3","lightpink")
 E(g_sld_com2)$curved = 0
 
-ls2 <- layout_with_fr(g_sld_com2, niter =  50 ,weights = E(g_sld_com2)$norm_1)
+ls2 <- layout_with_fr(g_sld_com2, niter =  1000 ,weights =E(g_sld_com2)$norm_1)
 
 
 plot(g_sld_com2, rescale = T, layout = ls2)
 ```
 
 ![](Ranking_norm_viz_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+
+
+
 
 
 
@@ -639,15 +647,16 @@ Checamos plot de grado vs fuerza promedio
 
 
 
+
 ```r
-deg_vs_str_infneg = cbind.data.frame(V(g_inf_neg)$degree, V(g_inf_neg)$strnorm)
-deg_vs_str_infpos = cbind.data.frame(V(g_inf_pos)$degree, V(g_inf_pos)$strnorm)
-deg_vs_str_infcom = cbind.data.frame(V(g_inf_com2)$degree, V(g_inf_com2)$strnorm)
+deg_vs_str_infneg = cbind.data.frame(V(g_inf_neg)$degree, V(g_inf_neg)$str)
+deg_vs_str_infpos = cbind.data.frame(V(g_inf_pos)$degree, V(g_inf_pos)$str)
+deg_vs_str_infcom = cbind.data.frame(V(g_inf_com2)$degree, V(g_inf_com2)$str)
 
 
-deg_vs_str_sldneg = cbind.data.frame(V(g_sld_neg)$degree, V(g_sld_neg)$strnorm)
-deg_vs_str_sldpos = cbind.data.frame(V(g_sld_pos)$degree, V(g_sld_pos)$strnorm)
-deg_vs_str_sldcom = cbind.data.frame(V(g_sld_com2)$degree, V(g_sld_com2)$strnorm)
+deg_vs_str_sldneg = cbind.data.frame(V(g_sld_neg)$degree, V(g_sld_neg)$str)
+deg_vs_str_sldpos = cbind.data.frame(V(g_sld_pos)$degree, V(g_sld_pos)$str)
+deg_vs_str_sldcom = cbind.data.frame(V(g_sld_com2)$degree, V(g_sld_com2)$str)
 ```
 
 
@@ -655,10 +664,10 @@ deg_vs_str_sldcom = cbind.data.frame(V(g_sld_com2)$degree, V(g_sld_com2)$strnorm
 
 ```r
 ggplot(deg_vs_str_infneg) +
- aes(x = `V(g_inf_neg)$degree`, y = `V(g_inf_neg)$strnorm`) +
+ aes(x = `V(g_inf_neg)$degree`, y = `V(g_inf_neg)$str`) +
  geom_point(shape = "circle", 
  size = 1.5, colour = "#C9092C") + geom_vline(xintercept = mean( deg_vs_str_infneg$`V(g_inf_neg)$degree`), col = "black") +
-  geom_hline(yintercept = mean(deg_vs_str_infneg$`V(g_inf_neg)$strnorm`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_infneg$`V(g_inf_neg)$str`), col = "black") +
  theme_minimal()
 ```
 
@@ -666,10 +675,10 @@ ggplot(deg_vs_str_infneg) +
 
 ```r
 ggplot(deg_vs_str_infpos) +
- aes(x = `V(g_inf_pos)$degree`, y = `V(g_inf_pos)$strnorm`) +
+ aes(x = `V(g_inf_pos)$degree`, y = `V(g_inf_pos)$str`) +
  geom_point(shape = "circle", 
  size = 1.5, colour = "green") + geom_vline(xintercept = mean( deg_vs_str_infpos$`V(g_inf_pos)$degree`), col = "black") +
-  geom_hline(yintercept = mean(deg_vs_str_infpos$`V(g_inf_pos)$strnorm`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_infpos$`V(g_inf_pos)$str`), col = "black") +
  theme_minimal()
 ```
 
@@ -677,15 +686,11 @@ ggplot(deg_vs_str_infpos) +
 
 ```r
 ggplot(deg_vs_str_infcom) +
- aes(x = `V(g_inf_com2)$degree`, y = `V(g_inf_com2)$strnorm`) +
+ aes(x = `V(g_inf_com2)$degree`, y = `V(g_inf_com2)$str`) +
  geom_point(shape = "circle", 
  size = 1.5, colour = "steelblue3") + geom_vline(xintercept = mean( deg_vs_str_infcom$`V(g_inf_com2)$degree`), col = "black") +
-  geom_hline(yintercept = mean(deg_vs_str_infcom$`V(g_inf_com2)$strnorm`, na.rm = T), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_infcom$`V(g_inf_com2)$str`, na.rm = T), col = "black") +
  theme_minimal()
-```
-
-```
-## Warning: Removed 24 rows containing missing values (geom_point).
 ```
 
 ![](Ranking_norm_viz_files/figure-html/unnamed-chunk-24-3.png)<!-- -->
@@ -695,10 +700,10 @@ ggplot(deg_vs_str_infcom) +
 
 ```r
 ggplot(deg_vs_str_sldneg) +
- aes(x = `V(g_sld_neg)$degree`, y = `V(g_sld_neg)$strnorm`) +
+ aes(x = `V(g_sld_neg)$degree`, y = `V(g_sld_neg)$str`) +
  geom_point(shape = "circle", 
  size = 1.5, colour = "#C9092C") + geom_vline(xintercept = mean( deg_vs_str_sldneg$`V(g_sld_neg)$degree`), col = "black") +
-  geom_hline(yintercept = mean(deg_vs_str_sldneg$`V(g_sld_neg)$strnorm`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_sldneg$`V(g_sld_neg)$str`), col = "black") +
  theme_minimal()
 ```
 
@@ -706,10 +711,10 @@ ggplot(deg_vs_str_sldneg) +
 
 ```r
 ggplot(deg_vs_str_sldpos) +
- aes(x = `V(g_sld_pos)$degree`, y = `V(g_sld_pos)$strnorm`) +
+ aes(x = `V(g_sld_pos)$degree`, y = `V(g_sld_pos)$str`) +
  geom_point(shape = "circle", 
  size = 1.5, colour = "green") + geom_vline(xintercept = mean( deg_vs_str_sldpos$`V(g_sld_pos)$degree`), col = "black") +
-  geom_hline(yintercept = mean(deg_vs_str_sldpos$`V(g_sld_pos)$strnorm`), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_sldpos$`V(g_sld_pos)$str`), col = "black") +
  theme_minimal()
 ```
 
@@ -717,15 +722,11 @@ ggplot(deg_vs_str_sldpos) +
 
 ```r
 ggplot(deg_vs_str_sldcom) +
- aes(x = `V(g_sld_com2)$degree`, y = `V(g_sld_com2)$strnorm`) +
+ aes(x = `V(g_sld_com2)$degree`, y = `V(g_sld_com2)$str`) +
  geom_point(shape = "circle", 
  size = 1.5, colour = "plum2") + geom_vline(xintercept = mean( deg_vs_str_sldcom$`V(g_sld_com2)$degree`), col = "black") +
-  geom_hline(yintercept = mean(deg_vs_str_sldcom$`V(g_sld_com2)$strnorm`, na.rm = T), col = "black") +
+  geom_hline(yintercept = mean(deg_vs_str_sldcom$`V(g_sld_com2)$str`, na.rm = T), col = "black") +
  theme_minimal()
-```
-
-```
-## Warning: Removed 25 rows containing missing values (geom_point).
 ```
 
 ![](Ranking_norm_viz_files/figure-html/unnamed-chunk-25-3.png)<!-- -->
@@ -761,29 +762,21 @@ Checamos fuerza norm v.s. rank
 
 
 ```r
-str_rank_inf = cbind.data.frame(V(g_inf_com2)$name, V(g_inf_com2)$strnorm)
-str_rank_inf =  str_rank_inf[order(-str_rank_inf$`V(g_inf_com2)$strnorm`),]
-str_rank_inf$rank = rank(-str_rank_inf$`V(g_inf_com2)$strnorm`, ties.method = "min")
+str_rank_inf = cbind.data.frame(V(g_inf_com2)$name, V(g_inf_com2)$str)
+str_rank_inf =  str_rank_inf[order(-str_rank_inf$`V(g_inf_com2)$str`),]
+str_rank_inf$rank = rank(-str_rank_inf$`V(g_inf_com2)$str`, ties.method = "min")
 
 
 
-str_rank_sld = cbind.data.frame(V(g_sld_com2)$name, V(g_sld_com2)$strnorm)
-str_rank_sld =  str_rank_sld[order(-str_rank_sld$`V(g_sld_com2)$strnorm`),]
-str_rank_sld$rank = rank(-str_rank_sld$`V(g_sld_com2)$strnorm`, ties.method = "min")
+str_rank_sld = cbind.data.frame(V(g_sld_com2)$name, V(g_sld_com2)$str)
+str_rank_sld =  str_rank_sld[order(-str_rank_sld$`V(g_sld_com2)$str`),]
+str_rank_sld$rank = rank(-str_rank_sld$`V(g_sld_com2)$str`, ties.method = "min")
 
 
 
 ggplot() + 
-geom_line(data=str_rank_inf, aes(x=log10(`V(g_inf_com2)$strnorm`), y=log10(rank)), color='midnightblue') + 
-geom_line(data=str_rank_sld, aes(x=log10(`V(g_sld_com2)$strnorm`), y=log10(rank)), color='tomato') + theme_minimal()
-```
-
-```
-## Warning: Removed 24 row(s) containing missing values (geom_path).
-```
-
-```
-## Warning: Removed 25 row(s) containing missing values (geom_path).
+geom_line(data=str_rank_inf, aes(x=log10(`V(g_inf_com2)$str`), y=log10(rank)), color='midnightblue') + 
+geom_line(data=str_rank_sld, aes(x=log10(`V(g_sld_com2)$str`), y=log10(rank)), color='tomato') + theme_minimal()
 ```
 
 ![](Ranking_norm_viz_files/figure-html/unnamed-chunk-27-1.png)<!-- -->
@@ -808,19 +801,653 @@ ranks_compare$rank_inf = itsct_inf_ord$rank
 ranks_compare$grado_inf = itsct_inf_ord$`V(g_inf_com2)$degree`
 
 colnames(ranks_compare) = c("OTU", "grado_sld", "rank_salud", "rank_inf", "grado_inf")
+ranks_compare = ranks_compare %>% mutate(quad = case_when(rank_salud <= 25 & rank_inf <= 25 ~ "Top25 Inf & Sld",
+                                          rank_salud <= 25 & rank_inf > 25 ~ "Top25 Sld",
+                                          rank_salud > 25 & rank_inf <= 25 ~ "Top25 Inf",
+                                          rank_salud > 25 & rank_inf > 25 ~ "Rank < 25 en Inf y Sld"))
 ```
 
 
 
 ```r
+T2D = T2D16S()
+T2Dtax = tax_table(T2D) %>% as.data.frame()
+View(head(T2D16S_tax))
+```
+
+
+
+```r
+topSldInf = filter(ranks_compare, ranks_compare$quad == "Top25 Inf & Sld")
+topSld = filter(ranks_compare, ranks_compare$quad == "Top25 Sld")
+topInf = filter(ranks_compare, ranks_compare$quad == "Top25 Inf")
+NS = filter(ranks_compare, ranks_compare$quad == "Rank < 25 en Inf y Sld")
+
+topSldInf_tax = filter(T2Dtax, rownames(T2D16S_tax) %in% topSldInf$OTU)
+topSld_tax = filter(T2Dtax, rownames(T2D16S_tax) %in% topSld$OTU)
+topInf_tax = filter(T2Dtax, rownames(T2D16S_tax) %in% topInf$OTU)
+NS_tax = filter(T2Dtax, rownames(T2D16S_tax) %in% NS$OTU)
+
+
+topSldInf_tax = topSldInf_tax[order(rownames(topSldInf_tax)), ]
+topSld_tax = topSld_tax[order(rownames(topSld_tax)), ]
+topInf_tax = topInf_tax[order(rownames(topInf_tax)), ]
+NS_tax = NS_tax[order(rownames(NS_tax)), ]
+
+topSldInf_rt = cbind(topSldInf_tax, topSldInf$grado_sld, topSldInf$grado_inf)
+topSld_rt = cbind(topSld_tax, topSld$grado_sld, topSld$grado_inf)
+topInf_rt = cbind(topInf_tax, topInf$grado_sld, topInf$grado_inf)
+NS_rt = cbind(NS_tax, NS$grado_sld, NS$grado_inf)
+
+
+
+colnames(topSldInf_rt) = c("Kingdom","Phylum","Class", "Order","Family","Genus","Species", "Grado red salud", "Grado red infectado")
+
+
+colnames(topSld_rt) = c("Kingdom","Phylum","Class", "Order","Family","Genus","Species", "Grado red salud", "Grado red infectado")
+
+
+colnames(topInf_rt) = c("Kingdom","Phylum","Class", "Order","Family","Genus","Species", "Grado red salud", "Grado red infectado")
+
+
+colnames(NS_rt) = c("Kingdom","Phylum","Class", "Order","Family","Genus","Species", "Grado red salud", "Grado red infectado")
+```
+
+
+
+
+
+
+
+```r
 ggplot(ranks_compare) +
- aes(x =-log10(rank_inf), y = -log10(rank_salud)) +
- geom_point(shape = "circle", size = 1, 
- colour = "#FF269E") +
-geom_abline(intercept = 0, slope = 1) +
+ aes(x =-log10(rank_inf), y = -log10(rank_salud), color = quad) +
+ geom_point(shape = "circle", size = 1) + geom_hline(yintercept =-log10(25),
+                                                   color = "red")+ 
+  geom_vline(xintercept = -log10(25), color= "red") +
  theme_minimal()
 ```
 
-![](Ranking_norm_viz_files/figure-html/unnamed-chunk-29-1.png)<!-- -->
+![](Ranking_norm_viz_files/figure-html/unnamed-chunk-31-1.png)<!-- -->
+
+
+Observamos ahora a qué taxonomía pertenecen los OTUs de cada cuadrante.
+
+
+```r
+#Top 25 en ambas condiciones
+kable(topSldInf_rt)
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:left;"> Kingdom </th>
+   <th style="text-align:left;"> Phylum </th>
+   <th style="text-align:left;"> Class </th>
+   <th style="text-align:left;"> Order </th>
+   <th style="text-align:left;"> Family </th>
+   <th style="text-align:left;"> Genus </th>
+   <th style="text-align:left;"> Species </th>
+   <th style="text-align:right;"> Grado red salud </th>
+   <th style="text-align:right;"> Grado red infectado </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 295485 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 221 </td>
+   <td style="text-align:right;"> 128 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 519398 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 155 </td>
+   <td style="text-align:right;"> 146 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 549635 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Blautia </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 159 </td>
+   <td style="text-align:right;"> 136 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 588277 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Blautia </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 185 </td>
+   <td style="text-align:right;"> 142 </td>
+  </tr>
+</tbody>
+</table>
+
+```r
+#Top 25 SOLO en pacientes saludables
+kable(topSld_rt)
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:left;"> Kingdom </th>
+   <th style="text-align:left;"> Phylum </th>
+   <th style="text-align:left;"> Class </th>
+   <th style="text-align:left;"> Order </th>
+   <th style="text-align:left;"> Family </th>
+   <th style="text-align:left;"> Genus </th>
+   <th style="text-align:left;"> Species </th>
+   <th style="text-align:right;"> Grado red salud </th>
+   <th style="text-align:right;"> Grado red infectado </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 197274 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 167 </td>
+   <td style="text-align:right;"> 75 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 287978 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Blautia </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 172 </td>
+   <td style="text-align:right;"> 106 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 324214 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Oscillospira </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 210 </td>
+   <td style="text-align:right;"> 67 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 327818 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 172 </td>
+   <td style="text-align:right;"> 90 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 337461 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 143 </td>
+   <td style="text-align:right;"> 46 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 343811 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 143 </td>
+   <td style="text-align:right;"> 23 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 355533 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 174 </td>
+   <td style="text-align:right;"> 57 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 360015 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> [Ruminococcus] </td>
+   <td style="text-align:left;"> gnavus </td>
+   <td style="text-align:right;"> 159 </td>
+   <td style="text-align:right;"> 101 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 365372 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 177 </td>
+   <td style="text-align:right;"> 97 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 369014 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 201 </td>
+   <td style="text-align:right;"> 112 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 370154 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 188 </td>
+   <td style="text-align:right;"> 97 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 4349261 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 149 </td>
+   <td style="text-align:right;"> 42 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 524848 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 167 </td>
+   <td style="text-align:right;"> 68 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 525215 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 173 </td>
+   <td style="text-align:right;"> 61 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 528652 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 170 </td>
+   <td style="text-align:right;"> 53 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 528715 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 156 </td>
+   <td style="text-align:right;"> 90 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 529940 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 188 </td>
+   <td style="text-align:right;"> 96 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 531888 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 198 </td>
+   <td style="text-align:right;"> 84 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 551419 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 157 </td>
+   <td style="text-align:right;"> 62 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 581003 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 152 </td>
+   <td style="text-align:right;"> 75 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 583958 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 153 </td>
+   <td style="text-align:right;"> 59 </td>
+  </tr>
+</tbody>
+</table>
+
+```r
+#Top 25 SOLO en pacientes infectados
+kable(topInf_rt)
+```
+
+<table>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:left;"> Kingdom </th>
+   <th style="text-align:left;"> Phylum </th>
+   <th style="text-align:left;"> Class </th>
+   <th style="text-align:left;"> Order </th>
+   <th style="text-align:left;"> Family </th>
+   <th style="text-align:left;"> Genus </th>
+   <th style="text-align:left;"> Species </th>
+   <th style="text-align:right;"> Grado red salud </th>
+   <th style="text-align:right;"> Grado red infectado </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> 191148 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 47 </td>
+   <td style="text-align:right;"> 148 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 192711 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 101 </td>
+   <td style="text-align:right;"> 121 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 198521 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 107 </td>
+   <td style="text-align:right;"> 134 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 345801 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Coprococcus </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 97 </td>
+   <td style="text-align:right;"> 124 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 363692 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> [Ruminococcus] </td>
+   <td style="text-align:left;"> gnavus </td>
+   <td style="text-align:right;"> 132 </td>
+   <td style="text-align:right;"> 119 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 367889 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Coprococcus </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 59 </td>
+   <td style="text-align:right;"> 133 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 368338 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 79 </td>
+   <td style="text-align:right;"> 132 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 368698 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 120 </td>
+   <td style="text-align:right;"> 122 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 369379 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 80 </td>
+   <td style="text-align:right;"> 136 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 370183 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Blautia </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 82 </td>
+   <td style="text-align:right;"> 127 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 515632 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Coprococcus </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 126 </td>
+   <td style="text-align:right;"> 126 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 517170 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Coprococcus </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 108 </td>
+   <td style="text-align:right;"> 122 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 519746 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Erysipelotrichi </td>
+   <td style="text-align:left;"> Erysipelotrichales </td>
+   <td style="text-align:left;"> Erysipelotrichaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 7 </td>
+   <td style="text-align:right;"> 147 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 530327 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> Faecalibacterium </td>
+   <td style="text-align:left;"> prausnitzii </td>
+   <td style="text-align:right;"> 76 </td>
+   <td style="text-align:right;"> 122 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 575844 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Ruminococcaceae </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 45 </td>
+   <td style="text-align:right;"> 121 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 576975 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> Lachnospiraceae </td>
+   <td style="text-align:left;"> Blautia </td>
+   <td style="text-align:left;"> producta </td>
+   <td style="text-align:right;"> 83 </td>
+   <td style="text-align:right;"> 128 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 581658 </td>
+   <td style="text-align:left;"> Bacteria </td>
+   <td style="text-align:left;"> Firmicutes </td>
+   <td style="text-align:left;"> Clostridia </td>
+   <td style="text-align:left;"> Clostridiales </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:left;"> NA </td>
+   <td style="text-align:right;"> 121 </td>
+   <td style="text-align:right;"> 119 </td>
+  </tr>
+</tbody>
+</table>
 
 
