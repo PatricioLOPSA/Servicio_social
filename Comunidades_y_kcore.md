@@ -23,6 +23,7 @@ library(dplyr)
 library(RColorBrewer)
 library(ggforce)
 library(pheatmap)
+library(janitor)
 ```
 
 
@@ -242,7 +243,7 @@ max(infomap_inf$modularity)
 ```
 
 ```
-## [1] 0.5758855
+## [1] 0.5765023
 ```
 
 ```r
@@ -250,7 +251,7 @@ max(infomap_sld$modularity)
 ```
 
 ```
-## [1] 0.6117096
+## [1] 0.6104903
 ```
 
 ```r
@@ -428,19 +429,19 @@ mi11 <- filter(DF_lou_inf, DF_lou_inf$Community==11)
 mi12 <- filter(DF_lou_inf, DF_lou_inf$Community==12)
 mi13 <- filter(DF_lou_inf, DF_lou_inf$Community==13)
 
-di1 <- induced_subgraph(g_inf_core, mi1$OTU) %>% gsize() 
-di2 <- induced_subgraph(g_inf_core, mi2$OTU) %>% gsize() 
-di3 <- induced_subgraph(g_inf_core, mi3$OTU) %>% gsize() 
-di4 <- induced_subgraph(g_inf_core, mi4$OTU) %>% gsize() 
-di5 <- induced_subgraph(g_inf_core, mi5$OTU) %>% gsize() 
-di6 <- induced_subgraph(g_inf_core, mi6$OTU) %>% gsize() 
-di7 <- induced_subgraph(g_inf_core, mi7$OTU) %>% gsize() 
-di8 <- induced_subgraph(g_inf_core, mi8$OTU) %>% gsize() 
-di9 <- induced_subgraph(g_inf_core, mi9$OTU) %>% gsize() 
-di10 <- induced_subgraph(g_inf_core, mi10$OTU) %>% gsize() 
-di11 <- induced_subgraph(g_inf_core, mi11$OTU) %>% gsize() 
-di12 <- induced_subgraph(g_inf_core, mi12$OTU) %>% gsize() 
-di13 <- induced_subgraph(g_inf_core, mi13$OTU) %>% gsize() 
+di1 <- induced_subgraph(g_inf_core, mi1$OTU) %>% edge_density() 
+di2 <- induced_subgraph(g_inf_core, mi2$OTU) %>% edge_density() 
+di3 <- induced_subgraph(g_inf_core, mi3$OTU) %>% edge_density() 
+di4 <- induced_subgraph(g_inf_core, mi4$OTU) %>% edge_density() 
+di5 <- induced_subgraph(g_inf_core, mi5$OTU) %>% edge_density() 
+di6 <- induced_subgraph(g_inf_core, mi6$OTU) %>% edge_density() 
+di7 <- induced_subgraph(g_inf_core, mi7$OTU) %>% edge_density() 
+di8 <- induced_subgraph(g_inf_core, mi8$OTU) %>% edge_density() 
+di9 <- induced_subgraph(g_inf_core, mi9$OTU) %>% edge_density() 
+di10 <- induced_subgraph(g_inf_core, mi10$OTU) %>% edge_density() 
+di11 <- induced_subgraph(g_inf_core, mi11$OTU) %>% edge_density() 
+di12 <- induced_subgraph(g_inf_core, mi12$OTU) %>% edge_density() 
+di13 <- induced_subgraph(g_inf_core, mi13$OTU) %>% edge_density() 
 
 Densidades_inf <- c(di1,di2,di3,di4,di5,di6,di7,di8,di9,di10,di11,di12,di13)
 
@@ -451,19 +452,19 @@ Dens_vs_size_inf
 
 ```
 ##    Var1 Freq Densidades_inf
-## 1     1  138           1945
-## 2     2  113           1484
-## 3     3  111            788
-## 4     4  244           2879
-## 5     5  144           2119
-## 6     6    9             22
-## 7     7    5              7
-## 8     8   41            185
-## 9     9  126           2869
-## 10   10  189           1865
-## 11   11  144           1810
-## 12   12    2              1
-## 13   13  118            940
+## 1     1  138      0.2057548
+## 2     2  113      0.2345133
+## 3     3  111      0.1290745
+## 4     4  244      0.0971126
+## 5     5  144      0.2058081
+## 6     6    9      0.6111111
+## 7     7    5      0.7000000
+## 8     8   41      0.2256098
+## 9     9  126      0.3643175
+## 10   10  189      0.1049758
+## 11   11  144      0.1757964
+## 12   12    2      1.0000000
+## 13   13  118      0.1361727
 ```
 
 
@@ -491,25 +492,25 @@ mi19 <- filter(DF_lou_sld, DF_lou_sld$Community==19)
 
 
 
-ds1 <- induced_subgraph(g_sld_core, mi1$OTU) %>% gsize() 
-ds2 <- induced_subgraph(g_sld_core, mi2$OTU) %>% gsize() 
-ds3 <- induced_subgraph(g_sld_core, mi3$OTU) %>% gsize() 
-ds4 <- induced_subgraph(g_sld_core, mi4$OTU) %>% gsize() 
-ds5 <- induced_subgraph(g_sld_core, mi5$OTU) %>% gsize() 
-ds6 <- induced_subgraph(g_sld_core, mi6$OTU) %>% gsize() 
-ds7 <- induced_subgraph(g_sld_core, mi7$OTU) %>% gsize() 
-ds8 <- induced_subgraph(g_sld_core, mi8$OTU) %>% gsize() 
-ds9 <- induced_subgraph(g_sld_core, mi9$OTU) %>% gsize() 
-ds10 <- induced_subgraph(g_sld_core, mi10$OTU) %>% gsize() 
-ds11 <- induced_subgraph(g_sld_core, mi11$OTU) %>% gsize() 
-ds12 <- induced_subgraph(g_sld_core, mi12$OTU) %>% gsize() 
-ds13 <- induced_subgraph(g_sld_core, mi13$OTU) %>% gsize() 
-ds14 <- induced_subgraph(g_sld_core, mi14$OTU) %>% gsize() 
-ds15 <- induced_subgraph(g_sld_core, mi15$OTU) %>% gsize() 
-ds16 <- induced_subgraph(g_sld_core, mi16$OTU) %>% gsize() 
-ds17 <- induced_subgraph(g_sld_core, mi17$OTU) %>% gsize() 
-ds18 <- induced_subgraph(g_sld_core, mi18$OTU) %>% gsize() 
-ds19 <- induced_subgraph(g_sld_core, mi19$OTU) %>% gsize() 
+ds1 <- induced_subgraph(g_sld_core, mi1$OTU) %>% edge_density() 
+ds2 <- induced_subgraph(g_sld_core, mi2$OTU) %>% edge_density() 
+ds3 <- induced_subgraph(g_sld_core, mi3$OTU) %>% edge_density() 
+ds4 <- induced_subgraph(g_sld_core, mi4$OTU) %>% edge_density() 
+ds5 <- induced_subgraph(g_sld_core, mi5$OTU) %>% edge_density() 
+ds6 <- induced_subgraph(g_sld_core, mi6$OTU) %>% edge_density() 
+ds7 <- induced_subgraph(g_sld_core, mi7$OTU) %>% edge_density() 
+ds8 <- induced_subgraph(g_sld_core, mi8$OTU) %>% edge_density() 
+ds9 <- induced_subgraph(g_sld_core, mi9$OTU) %>% edge_density() 
+ds10 <- induced_subgraph(g_sld_core, mi10$OTU) %>% edge_density() 
+ds11 <- induced_subgraph(g_sld_core, mi11$OTU) %>% edge_density() 
+ds12 <- induced_subgraph(g_sld_core, mi12$OTU) %>% edge_density() 
+ds13 <- induced_subgraph(g_sld_core, mi13$OTU) %>% edge_density() 
+ds14 <- induced_subgraph(g_sld_core, mi14$OTU) %>% edge_density() 
+ds15 <- induced_subgraph(g_sld_core, mi15$OTU) %>% edge_density() 
+ds16 <- induced_subgraph(g_sld_core, mi16$OTU) %>% edge_density() 
+ds17 <- induced_subgraph(g_sld_core, mi17$OTU) %>% edge_density() 
+ds18 <- induced_subgraph(g_sld_core, mi18$OTU) %>% edge_density() 
+ds19 <- induced_subgraph(g_sld_core, mi19$OTU) %>% edge_density() 
 
 
 Densidades_sld <- c(ds1,ds2,ds3,ds4,ds5,ds6,ds7,ds8,ds9,ds10,ds11,ds12,ds13,ds14,ds15,ds16,ds17,ds18,ds19)
@@ -521,31 +522,31 @@ Dens_vs_size_sld
 
 ```
 ##    Var1 Freq Densidades_sld
-## 1     1   81           1754
-## 2     2  258           4686
-## 3     3  233           3210
-## 4     4  123           1004
-## 5     5  304           6214
-## 6     6   37            221
-## 7     7   23            160
-## 8     8   35            169
-## 9     9   30             67
-## 10   10   35            120
-## 11   11   32             89
-## 12   12   30            105
-## 13   13   42            454
-## 14   14   24             77
-## 15   15   98            376
-## 16   16   36            108
-## 17   17    5              8
-## 18   18   15             29
-## 19   19    2              1
+## 1     1   81     0.54135802
+## 2     2  258     0.14134467
+## 3     3  233     0.11876572
+## 4     4  123     0.13381314
+## 5     5  304     0.13492270
+## 6     6   37     0.33183183
+## 7     7   23     0.63241107
+## 8     8   35     0.28403361
+## 9     9   30     0.15402299
+## 10   10   35     0.20168067
+## 11   11   32     0.17943548
+## 12   12   30     0.24137931
+## 13   13   42     0.52729384
+## 14   14   24     0.27898551
+## 15   15   98     0.07910793
+## 16   16   36     0.17142857
+## 17   17    5     0.80000000
+## 18   18   15     0.27619048
+## 19   19    2     1.00000000
 ```
 
 
 ```r
 ggplot(Dens_vs_size_inf) +
- aes(x =log10(Freq), y = log10(Densidades_inf)) +
+ aes(x =(Freq), y = (Densidades_inf)) +
  geom_point(shape = "circle", size = 3, 
  colour = "#112446") +
  theme_minimal()
@@ -555,7 +556,7 @@ ggplot(Dens_vs_size_inf) +
 
 ```r
 ggplot(Dens_vs_size_sld) +
- aes(x = log10(Freq), y = log10(Densidades_sld)) +
+ aes(x = (Freq), y = (Densidades_sld)) +
  geom_point(shape = "circle", size = 3, 
  colour = "green") +
  theme_minimal()
@@ -721,5 +722,205 @@ pheatmap((matrix_sld), cluster_cols = F, cluster_rows = F,
 ```
 
 ![](Comunidades_y_kcore_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
+# Enriquecimiento con prueba exacta de fisher de R
+
+
+
+
+```r
+contin_sld = DF_sld_taxmod %>% tabyl(Family, Community) %>% adorn_totals(where=c("col","row"))
+contin_inf = DF_inf_taxmod %>% tabyl(Family, Community) %>% adorn_totals(where=c("col","row"))
+contin_inf
+```
+
+```
+##                 Family   1   2   3   4   5 6 7  8   9  10  11 12  13 Total
+##      [Barnesiellaceae]   0   1   0   2   0 0 0  0   1   0   1  0   2     7
+##     [Mogibacteriaceae]   0   0   1   1   2 0 0  0   0   0   3  0   2     9
+##     [Odoribacteraceae]   0   1   1   3   1 0 0  1   0   1   0  0   0     8
+##   [Paraprevotellaceae]   0   0   0   0   0 0 0  0   0   0   0  0   2     2
+##       Actinomycetaceae   0   0   0   0   0 0 0  0   0   0   1  0   0     1
+##         Alcaligenaceae   2   0   1   1   1 0 0  0   0   0   1  0   0     6
+##         Bacteroidaceae   7   8   7  18  10 1 0  2  18  17  15  0   9   112
+##     Bifidobacteriaceae   0   0   0   1   0 0 0  0   0   0   0  0   0     1
+##      Carnobacteriaceae   0   0   0   0   0 1 0  0   0   0   0  0   0     1
+##    Christensenellaceae   1   1   2   2   1 0 0  0   0   2   2  0   2    13
+##         Clostridiaceae   7   3   3   8   4 0 0  1   1   5   2  0   3    37
+##      Coriobacteriaceae   0   0   3   0   1 1 0  0   2   1   2  0   2    12
+##    Desulfovibrionaceae   0   0   0   1   0 0 0  0   0   0   1  0   0     2
+##     Enterobacteriaceae   0   1   1   2   0 0 0  0   0   1   0  0   1     6
+##    Erysipelotrichaceae   3   0   2   1   2 0 0  0   0   1   1  0   1    11
+##                  EtOH8   0   0   0   1   0 0 0  0   0   0   0  0   0     1
+##       Halanaerobiaceae   0   0   0   0   0 0 0  0   0   1   0  0   0     1
+##        Lachnospiraceae  52  41  39  87  55 2 3 14  37  66  48  2  28   474
+##         Micrococcaceae   0   0   0   0   0 0 0  0   1   0   0  0   0     1
+##       Oxalobacteraceae   0   0   0   1   0 0 0  0   0   1   0  0   0     2
+##        Pasteurellaceae   0   0   0   1   0 0 0  0   0   0   0  0   0     1
+##  Peptostreptococcaceae   0   1   0   2   1 0 0  0   0   3   0  0   1     8
+##     Porphyromonadaceae   2   2   1   0   1 0 0  0   1   1   1  0   2    11
+##         Prevotellaceae   3   0   0   5   3 0 0  0   1   0   0  0   2    14
+##   Propionibacteriaceae   0   0   0   0   0 0 0  0   1   0   0  0   0     1
+##          Rikenellaceae   0   0   0   0   3 0 0  0   2   4   3  0   2    14
+##        Ruminococcaceae  33  38  31  77  37 3 1 13  37  54  34  0  45   403
+##      Staphylococcaceae   0   0   0   0   1 0 0  0   0   0   0  0   0     1
+##       Streptococcaceae   0   0   3   1   2 0 0  0   2   0   1  0   0     9
+##      Turicibacteraceae   1   0   0   1   0 0 0  0   0   0   0  0   0     2
+##        Veillonellaceae   1   0   2   3   1 0 0  0   0   1   1  0   0     9
+##    Verrucomicrobiaceae   3   1   1   1   2 0 0  0   0   3   0  0   0    11
+##         Victivallaceae   1   0   0   0   0 0 0  0   0   0   1  0   0     2
+##                   <NA>  22  15  13  24  16 1 1 10  22  27  26  0  14   191
+##                  Total 138 113 111 244 144 9 5 41 126 189 144  2 118  1384
+```
+
+```r
+contin_sld
+```
+
+```
+##                 Family  1   2   3   4   5  6  7  8  9 10 11 12 13 14 15 16 17
+##      [Barnesiellaceae]  1   0   1   0   3  0  0  0  0  0  1  0  0  0  0  0  0
+##     [Mogibacteriaceae]  0   0   2   2   1  0  0  0  0  0  0  0  0  0  1  0  0
+##     [Odoribacteraceae]  0   4   0   1   1  0  0  0  0  1  1  0  0  0  0  0  0
+##   [Paraprevotellaceae]  0   0   0   0   1  0  0  0  0  0  0  0  0  0  0  0  0
+##       Actinomycetaceae  0   0   1   0   0  0  0  0  0  0  0  0  0  0  1  0  0
+##         Alcaligenaceae  0   0   0   1   1  1  1  0  0  1  0  0  1  0  0  0  0
+##         Bacteroidaceae  4  21  19  10  29  2  3  2  4  3  3  1  2  2 11  3  0
+##      Carnobacteriaceae  0   1   0   0   0  0  0  0  0  0  0  0  0  0  0  0  0
+##    Christensenellaceae  0   1   2   2   2  0  0  1  0  1  0  1  0  0  1  0  0
+##         Clostridiaceae  1   2   7   2   8  0  1  0  0  1  1  1  1  0  1  1  1
+##      Coriobacteriaceae  5   2   1   0   3  0  2  1  0  1  0  1  0  0  0  0  0
+##    Desulfovibrionaceae  0   0   0   0   0  0  0  0  0  0  0  0  0  0  0  0  0
+##     Enterobacteriaceae  0   1   1   0   3  0  0  0  0  0  0  0  0  0  0  0  0
+##    Erysipelotrichaceae  0   1   4   1   2  2  0  0  1  0  0  0  1  0  1  0  0
+##                  EtOH8  0   0   1   0   0  0  0  0  0  0  0  0  0  0  0  0  0
+##       Halanaerobiaceae  0   0   0   0   0  0  0  0  0  0  0  0  0  0  1  0  0
+##        Lachnospiraceae 35  91  85  37 106 16  7 11  8 15 12  8 13  6 47 16  2
+##       Oxalobacteraceae  0   0   1   1   0  0  0  0  0  0  0  0  0  0  0  0  0
+##        Pasteurellaceae  0   0   0   1   0  0  0  0  0  0  0  0  0  0  0  0  0
+##  Peptostreptococcaceae  1   0   0   0   0  0  0  0  0  0  0  0  0  0  0  0  0
+##     Porphyromonadaceae  0   4   3   0   2  0  2  2  1  0  0  1  0  0  1  0  0
+##         Prevotellaceae  0   4   0   4   0  0  0  0  0  0  0  0  0  0  0  0  0
+##          Rikenellaceae  0   6   2   0   2  0  0  0  1  1  1  0  1  0  0  1  0
+##        Ruminococcaceae 24  88  70  36  91  9  4 13 10  8  8  8 12 13 21  7  2
+##       Streptococcaceae  0   2   0   0   5  1  0  0  0  0  1  0  0  0  0  0  0
+##      Turicibacteraceae  0   0   0   0   1  0  0  0  0  0  0  0  1  0  0  0  0
+##        Veillonellaceae  1   1   2   2   0  0  0  0  2  0  1  0  0  0  3  0  0
+##    Verrucomicrobiaceae  0   1   0   1   0  1  0  0  0  0  0  0  2  0  0  0  0
+##         Victivallaceae  0   1   0   0   0  0  0  0  0  0  0  0  0  0  0  0  0
+##                   <NA>  9  27  31  22  43  5  3  5  3  3  3  9  8  3  9  8  0
+##                  Total 81 258 233 123 304 37 23 35 30 35 32 30 42 24 98 36  5
+##  18 19 Total
+##   0  0     6
+##   0  0     6
+##   0  1     9
+##   1  0     2
+##   0  0     2
+##   0  0     6
+##   0  0   119
+##   0  0     1
+##   1  0    12
+##   0  1    29
+##   0  0    16
+##   1  0     1
+##   0  0     5
+##   0  0    13
+##   0  0     1
+##   0  0     1
+##   8  0   523
+##   0  0     2
+##   0  0     1
+##   0  0     1
+##   0  0    16
+##   0  0     8
+##   0  0    15
+##   1  0   425
+##   0  0     9
+##   0  0     2
+##   0  0    12
+##   0  0     5
+##   0  0     1
+##   3  0   194
+##  15  2  1443
+```
+
+```r
+minf=contin_inf[,-1] %>% as.data.frame()
+msld=contin_sld[,-1] %>% as.data.frame()
+
+fisher.test(matrix(c(minf[1,2],minf[34,2]-7,minf[1,14]-7,1384-minf[34,2]-minf[1,14]+minf[1,2]),nrow = 2) )
+```
+
+```
+## 
+## 	Fisher's Exact Test for Count Data
+## 
+## data:  matrix(c(minf[1, 2], minf[34, 2] - 7, minf[1, 14] - 7, 1384 -     minf[34, 2] - minf[1, 14] + minf[1, 2]), nrow = 2)
+## p-value = 0.00656
+## alternative hypothesis: true odds ratio is not equal to 1
+## 95 percent confidence interval:
+##  3.883205      Inf
+## sample estimates:
+## odds ratio 
+##        Inf
+```
+
+```r
+p_inf = matrix(ncol = 13, nrow = 34)
+p_sld = matrix(ncol = 19, nrow = 30)
+
+for (i in seq_along(1:34)) {
+  for (j in seq_along(1:13)) {
+   p_inf[i,j]= fisher.test(matrix(c(minf[i,j],minf[35,j]-minf[i,j],minf[i,14]-minf[i,j],1384-minf[35,j]-minf[i,14]+minf[i,j]),nrow = 2) , alternative="greater")$p.value
+  }
+  
+}
+
+for (i in seq_along(1:30)) {
+  for (j in seq_along(1:19)) {
+   p_sld[i,j]= fisher.test(matrix(c(msld[i,j],msld[31,j]-msld[i,j],msld[i,20]-msld[i,j],1443-msld[31,j]-msld[i,20]+msld[i,j]),nrow = 2) , alternative="greater")$p.value
+  }
+  
+}
+```
+
+
+```r
+fams_inf = contin_inf$Family[1:33]
+fams_sld = contin_sld$Family[1:29]
+
+
+pheatmap((p_inf[-34,]), cluster_cols = F, cluster_rows = F, 
+         color = colorRampPalette(rev(brewer.pal(n = 7, name ="OrRd")))(5),legend=T,breaks = c(0.01, 0.02,0.03,0.04,0.05,0.06), 
+         cellwidth = 15, cellheight = 15, border_color = "slategrey", labels_row =fams_inf,
+         angle_col = 0, , legend_breaks = c(0.06,0.05,0.04,0.03,0.02,0.01),legend_labels = c("P > 0.05","0.05","0.04","0.03","0.02","0.01"), main = "Familias sobrerepresentadas en módulos de red ")
+```
+
+![](Comunidades_y_kcore_files/figure-html/unnamed-chunk-20-1.png)<!-- -->
+
+```r
+pheatmap((p_sld[-30,]), cluster_cols = F, cluster_rows = F, 
+         color = colorRampPalette(rev(brewer.pal(n = 7, name ="GnBu")))(5),legend=T,breaks = c(0.01, 0.02,0.03,0.04,0.05,0.06), 
+         cellwidth = 15, cellheight = 15, border_color = "slategrey", labels_row =fams_sld, labels_col = colnames(sld_enrichment_mod[-1]),
+         angle_col = 0, , legend_breaks = c(0.06,0.05,0.04,0.03,0.02,0.01),legend_labels = c("P > 0.05","0.05","0.04","0.03","0.02","0.01"), main = "Familias sobrerepresentadas en módulos de red ")
+```
+
+![](Comunidades_y_kcore_files/figure-html/unnamed-chunk-20-2.png)<!-- -->
+
+
+
+```r
+prueba = table(cluster_louvain(g_inf_core, weights = V(g_inf_core)$corr)$membership)
+prueba
+```
+
+```
+## 
+##   1   2   3   4   5   6   7   8   9  10  11  12  13 
+## 138 113 111 244 144   9   5  41 126 189 144   2 118
+```
+
+
+
 
 
