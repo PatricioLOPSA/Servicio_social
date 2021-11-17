@@ -243,7 +243,7 @@ max(infomap_inf$modularity)
 ```
 
 ```
-## [1] 0.5765023
+## [1] 0.5743552
 ```
 
 ```r
@@ -251,7 +251,7 @@ max(infomap_sld$modularity)
 ```
 
 ```
-## [1] 0.6104903
+## [1] 0.6103996
 ```
 
 ```r
@@ -578,7 +578,7 @@ ggplot(Dens_vs_size_sld) +
 
 
 ```r
-# data wrangling. Queremos dos DFs con la informacion de las comunidades, OTUs y Taxonomias
+#  Queremos dos DFs con la informacion de las comunidades, OTUs y Taxonomias
 
 tax_core_inf =  filter(tax_inf, rownames(tax_inf) %in% DF_lou_inf$OTU)
 tax_core_sld =  filter(tax_sld, rownames(tax_sld) %in% DF_lou_sld$OTU)
@@ -921,6 +921,262 @@ prueba
 ```
 
 
+# Actualización enriquecimiento
+
+
+```r
+#Partimos del DF con OTUs, y su informacion de modulo y id. taxonomico
+sld_auxiliar = DF_sld_taxmod
+
+#Creo mis "mock variables"
+sld_auxiliar$InMOD = "TRUE"
+sld_auxiliar$InTAX = "TRUE"
+
+
+#Reemplazo NAs por cualquier texto
+sld_auxiliar$Family[is.na(sld_auxiliar$Family)] <- as.factor("Not Found")
+
+
+#lleno mock variables con respuestas binarias TRUE o FALSE
+sld_auxiliar$InMOD = ifelse(sld_auxiliar$Community==12, sld_auxiliar$InMOD=="TRUE", sld_auxiliar$InMOD=="FALSE")
+sld_auxiliar$InTAX = ifelse(sld_auxiliar$Family=="[Barnesiellaceae]", sld_auxiliar$InTAX=="TRUE", sld_auxiliar$InTAX=="FALSE")
+
+#con tabyl creo tabla de contingencia sobre las dos mock variables
+aux_contin_margin = sld_auxiliar %>% tabyl(InMOD,InTAX) %>% adorn_totals(where=c("col","row"))
+aux_contin_margin 
+```
+
+```
+##  InMOD FALSE TRUE Total
+##  FALSE  1407    6  1413
+##   TRUE    30    0    30
+##  Total  1437    6  1443
+```
+
+```r
+#Realizo prueba exacta de Fisher y extraigo p.value
+aux_contin = sld_auxiliar %>% tabyl(InMOD,InTAX) 
+fisher.test(as.matrix(aux_contin[,-1]))$p.value
+```
+
+```
+## [1] 1
+```
+
+
+Ahora metemos todo a un loop.
+
+
+```r
+contador_family  = contin_sld$Family[1:29]
+contador_mod = c(1:19)
+
+p_vals_sld = matrix(nrow = length(contador_family), ncol = length(contador_mod))
+
+for (i in seq_along(contador_family)) {
+  for (j in seq_along(contador_mod)) {
+    
+#Reinicio mis "mock variables"
+sld_auxiliar$InMOD = "TRUE"
+sld_auxiliar$InTAX = "TRUE"
+
+#lleno mock variables con respuestas binarias TRUE o FALSE
+sld_auxiliar$InTAX = ifelse(sld_auxiliar$Family==contador_family[i], sld_auxiliar$InTAX=="TRUE", sld_auxiliar$InTAX=="FALSE")
+sld_auxiliar$InMOD = ifelse(sld_auxiliar$Community==contador_mod[j], sld_auxiliar$InMOD=="TRUE", sld_auxiliar$InMOD=="FALSE")
+
+
+#Creo tabal de contingencia, realizo prueba exacta de Fisher y extraigo p.value
+aux_contin = sld_auxiliar %>% tabyl(InMOD,InTAX) 
+p_vals_sld[i,j] = fisher.test(as.matrix(aux_contin[,-1]), alternative="greater")$p.value
+
+    
+  }
+  
+}
+```
+
+
+
+```r
+all.equal(p_sld[-30,], p_vals_sld)
+```
+
+```
+## [1] TRUE
+```
+
+Ahora para la red infectados
+
+
+
+```r
+inf_auxiliar = DF_inf_taxmod
+inf_auxiliar$Family[is.na(inf_auxiliar$Family)] <- as.factor("Not Found")
+
+contador_family = contin_inf$Family[1:33]
+contador_mod = c(1:13)
+
+p_vals_inf = matrix(nrow = length(contador_family), ncol = length(contador_mod))
+
+for (i in seq_along(contador_family)) {
+  for (j in seq_along(contador_mod)) {
+    
+#Reinicio mis "mock variables"
+inf_auxiliar$InMOD = "TRUE"
+inf_auxiliar$InTAX = "TRUE"
+
+#lleno mock variables con respuestas binarias TRUE o FALSE
+inf_auxiliar$InTAX = ifelse(inf_auxiliar$Family==contador_family[i], inf_auxiliar$InTAX=="TRUE", inf_auxiliar$InTAX=="FALSE")
+inf_auxiliar$InMOD = ifelse(inf_auxiliar$Community==contador_mod[j], inf_auxiliar$InMOD=="TRUE", inf_auxiliar$InMOD=="FALSE")
+
+
+#Creo tabla de contingencia 2x2, realizo prueba exacta de Fisher y obtengo p.value
+aux_contin_inf = inf_auxiliar %>% tabyl(InMOD,InTAX) 
+p_vals_inf[i,j] = fisher.test(as.matrix(aux_contin_inf[,-1]), alternative="greater")$p.value
+
+    
+  }
+  
+}
+
+all.equal(p_inf[-34,],p_vals_inf)
+```
+
+```
+## [1] TRUE
+```
+
+
+
+
+```r
+table(V(g_sld_core)$core)
+```
+
+```
+## 
+##   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20 
+##  21  38  41  41  45  49  67  37  47  59  38  59  50  41  22  17  20  20  11  35 
+##  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40 
+##  12  22  41  16  18  17   6  19  24  32  11  17  11  15  16  23  17 115   1  62 
+##  41 
+## 190
+```
+
+```r
+table(V(g_inf_core)$core)
+```
+
+```
+## 
+##   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20 
+##  27  28  26  31  23  20  30  23  19  11  35  56  19  29  28  35  28  28  50  17 
+##  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40 
+##  30  21  22  44  71  43  53  39  43 131  19 227   1   3   3   3   5   4   7   3 
+##  41  42 
+##   3  46
+```
+
+```r
+DF_core_sld = cbind.data.frame(V(g_sld_core)$name, as.factor(V(g_sld_core)$core))
+DF_core_inf = cbind.data.frame(V(g_inf_core)$name, as.factor(V(g_inf_core)$core))
+
+
+DF_inf_taxcore = cbind.data.frame(DF_core_inf, tax_core_inf)
+DF_sld_taxcore = cbind.data.frame(DF_core_sld, tax_core_sld)
+```
+
+
+Enriquecimiento en k-cores.
+
+
+```r
+contador_family  = contin_sld$Family[1:29]
+contador_core = c(1:41)
+
+p_vals_sld_core = matrix(nrow = length(contador_family), ncol = length(contador_core))
+
+for (i in seq_along(contador_family)) {
+  for (j in seq_along(contador_core)) {
+    
+#Reinicio mis "mock variables"
+DF_sld_taxcore$InMOD = "TRUE"
+DF_sld_taxcore$InTAX = "TRUE"
+
+#lleno mock variables con respuestas binarias TRUE o FALSE
+DF_sld_taxcore$InTAX = ifelse(DF_sld_taxcore$Family==contador_family[i], DF_sld_taxcore$InTAX=="TRUE", DF_sld_taxcore$InTAX=="FALSE")
+DF_sld_taxcore$InMOD = ifelse(DF_sld_taxcore$`as.factor(V(g_sld_core)$core)`==contador_core[j], DF_sld_taxcore$InMOD=="TRUE", DF_sld_taxcore$InMOD=="FALSE")
+
+
+#Creo tabal de contingencia, realizo prueba exacta de Fisher y extraigo p.value
+aux_contin_coresld = DF_sld_taxcore %>% tabyl(InMOD,InTAX) 
+p_vals_sld_core[i,j] = fisher.test(as.matrix(aux_contin_coresld[,-1]), alternative="greater")$p.value
+
+    
+  }
+  
+}
+
+
+min(as.vector(p_vals_sld_core))
+```
+
+```
+## [1] 0.0004334866
+```
+
+```r
+min(p.adjust(as.vector(p_vals_sld_core), method = "fdr"))
+```
+
+```
+## [1] 0.2178795
+```
+
+
+
+```r
+contador_family  = contin_inf$Family[1:29]
+contador_core = c(1:42)
+
+p_vals_inf_core = matrix(nrow = length(contador_family), ncol = length(contador_core))
+
+for (i in seq_along(contador_family)) {
+  for (j in seq_along(contador_core)) {
+    
+#Reinicio mis "mock variables"
+DF_inf_taxcore$InMOD = "TRUE"
+DF_inf_taxcore$InTAX = "TRUE"
+
+#lleno mock variables con respuestas binarias TRUE o FALSE
+DF_inf_taxcore$InTAX = ifelse(DF_inf_taxcore$Family==contador_family[i], DF_inf_taxcore$InTAX=="TRUE", DF_inf_taxcore$InTAX=="FALSE")
+DF_inf_taxcore$InMOD = ifelse(DF_inf_taxcore$`as.factor(V(g_inf_core)$core)`==contador_core[j], DF_inf_taxcore$InMOD=="TRUE", DF_inf_taxcore$InMOD=="FALSE")
+
+
+#Creo tabal de contingencia, realizo prueba exacta de Fisher y extraigo p.value
+aux_contin_coreinf = DF_inf_taxcore %>% tabyl(InMOD,InTAX) 
+p_vals_inf_core[i,j] = fisher.test(as.matrix(aux_contin_coreinf[,-1]), alternative="greater")$p.value
+
+    
+  }
+  
+}
+
+
+min(as.vector(p_vals_inf_core))
+```
+
+```
+## [1] 0.0001356498
+```
+
+```r
+min(p.adjust(as.vector(p_vals_inf_core), method = "fdr"))
+```
+
+```
+## [1] 0.1446218
+```
 
 
 
